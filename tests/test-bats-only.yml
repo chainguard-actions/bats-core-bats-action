@@ -1,0 +1,118 @@
+name: Test bats-only installation (no libraries)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-install: "false"
+          assert-install: "false"
+          detik-install: "false"
+          file-install: "false"
+
+      - name: Assert bats is installed and on PATH
+        run: |
+          echo "Checking bats binary..."
+          if ! command -v bats &>/dev/null; then
+            echo "FAIL: bats not found on PATH"
+            exit 1
+          fi
+          echo "bats version: $(bats --version)"
+          echo "PASS: bats is installed"
+
+      - name: Assert bats-support is NOT installed
+        run: |
+          echo "Checking bats-support is absent..."
+          if [ -f "/usr/lib/bats-support/load.bash" ]; then
+            echo "FAIL: bats-support should not be installed"
+            exit 1
+          fi
+          echo "PASS: bats-support correctly not installed"
+
+      - name: Assert bats-assert is NOT installed
+        run: |
+          echo "Checking bats-assert is absent..."
+          if [ -f "/usr/lib/bats-assert/load.bash" ]; then
+            echo "FAIL: bats-assert should not be installed"
+            exit 1
+          fi
+          echo "PASS: bats-assert correctly not installed"
+
+      - name: Assert bats-detik is NOT installed
+        run: |
+          echo "Checking bats-detik is absent..."
+          if [ -d "/usr/lib/bats-detik" ]; then
+            echo "FAIL: bats-detik should not be installed"
+            exit 1
+          fi
+          echo "PASS: bats-detik correctly not installed"
+
+      - name: Assert bats-file is NOT installed
+        run: |
+          echo "Checking bats-file is absent..."
+          if [ -f "/usr/lib/bats-file/load.bash" ]; then
+            echo "FAIL: bats-file should not be installed"
+            exit 1
+          fi
+          echo "PASS: bats-file correctly not installed"
+
+      - name: Assert outputs - bats-installed is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.bats-installed }}
+        run: |
+          echo "actual bats-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected bats-installed='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - support-installed is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.support-installed }}
+        run: |
+          echo "actual support-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected support-installed='false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - assert-installed is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.assert-installed }}
+        run: |
+          echo "actual assert-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected assert-installed='false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - detik-installed is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.detik-installed }}
+        run: |
+          echo "actual detik-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected detik-installed='false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - file-installed is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.file-installed }}
+        run: |
+          echo "actual file-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected file-installed='false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

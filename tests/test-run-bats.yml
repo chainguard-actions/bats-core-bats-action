@@ -1,0 +1,61 @@
+name: Test bats can run tests after installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          assert-version: "2.1.0"
+          detik-install: "false"
+          file-version: "0.4.0"
+
+      - name: Create a bats test file using installed libraries
+        run: |
+          cat > /tmp/sample.bats << 'EOF'
+          load '/usr/lib/bats-support/load.bash'
+          load '/usr/lib/bats-assert/load.bash'
+          load '/usr/lib/bats-file/load.bash'
+
+          @test "basic arithmetic works" {
+            result=$(( 1 + 1 ))
+            assert_equal "$result" "2"
+          }
+
+          @test "echo outputs correctly" {
+            run echo "hello world"
+            assert_success
+            assert_output "hello world"
+          }
+
+          @test "file exists assertion" {
+            run test -f /tmp/sample.bats
+            assert_success
+          }
+          EOF
+
+      - name: Run bats tests
+        run: |
+          echo "Running bats tests..."
+          if ! bats /tmp/sample.bats; then
+            echo "FAIL: bats test run failed"
+            exit 1
+          fi
+          echo "PASS: bats tests ran successfully"
+
+      - name: Assert bats version output
+        run: |
+          echo "Checking bats version..."
+          VERSION_OUTPUT=$(bats --version)
+          echo "bats version: $VERSION_OUTPUT"
+          if ! echo "$VERSION_OUTPUT" | grep -q "1.11.0"; then
+            echo "FAIL: expected bats version 1.11.0, got: $VERSION_OUTPUT"
+            exit 1
+          fi
+          echo "PASS: correct bats version installed"

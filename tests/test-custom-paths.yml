@@ -1,0 +1,121 @@
+name: Test custom installation paths for bats libraries
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          support-path: "/tmp/custom-bats-support"
+          assert-version: "2.1.0"
+          assert-path: "/tmp/custom-bats-assert"
+          detik-install: "false"
+          file-version: "0.4.0"
+          file-path: "/tmp/custom-bats-file"
+
+      - name: Assert bats is installed and on PATH
+        run: |
+          echo "Checking bats binary..."
+          if ! command -v bats &>/dev/null; then
+            echo "FAIL: bats not found on PATH"
+            exit 1
+          fi
+          echo "bats version: $(bats --version)"
+          echo "PASS: bats is installed"
+
+      - name: Assert bats-support installed at custom path
+        run: |
+          echo "Checking bats-support at custom path..."
+          if [ ! -f "/tmp/custom-bats-support/load.bash" ]; then
+            echo "FAIL: bats-support load.bash not found at /tmp/custom-bats-support/load.bash"
+            exit 1
+          fi
+          echo "PASS: bats-support installed at custom path"
+
+      - name: Assert bats-assert installed at custom path
+        run: |
+          echo "Checking bats-assert at custom path..."
+          if [ ! -f "/tmp/custom-bats-assert/load.bash" ]; then
+            echo "FAIL: bats-assert load.bash not found at /tmp/custom-bats-assert/load.bash"
+            exit 1
+          fi
+          echo "PASS: bats-assert installed at custom path"
+
+      - name: Assert bats-file installed at custom path
+        run: |
+          echo "Checking bats-file at custom path..."
+          if [ ! -f "/tmp/custom-bats-file/load.bash" ]; then
+            echo "FAIL: bats-file load.bash not found at /tmp/custom-bats-file/load.bash"
+            exit 1
+          fi
+          echo "PASS: bats-file installed at custom path"
+
+      - name: Assert bats-support NOT at default path
+        run: |
+          echo "Checking bats-support is not at default path..."
+          if [ -f "/usr/lib/bats-support/load.bash" ]; then
+            echo "FAIL: bats-support should not be at default path /usr/lib/bats-support"
+            exit 1
+          fi
+          echo "PASS: bats-support correctly not at default path"
+
+      - name: Assert outputs - bats-installed is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.bats-installed }}
+        run: |
+          echo "actual bats-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected bats-installed='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - support-installed is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.support-installed }}
+        run: |
+          echo "actual support-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected support-installed='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - assert-installed is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.assert-installed }}
+        run: |
+          echo "actual assert-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected assert-installed='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - detik-installed is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.detik-installed }}
+        run: |
+          echo "actual detik-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected detik-installed='false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert outputs - file-installed is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.file-installed }}
+        run: |
+          echo "actual file-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected file-installed='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
