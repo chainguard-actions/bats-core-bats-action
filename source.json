@@ -1,6 +1,11 @@
 {
   "owner": "bats-core",
   "repo": "bats-action",
-  "version": "",
-  "url": "https://github.com/bats-core/bats-action"
+  "version": "2.1.1",
+  "commit_sha": "3b6fd9e3d70ab0587e754b8b6c8aa9c2e6f61d02",
+  "url": "https://github.com/bats-core/bats-action",
+  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "2",
+  "harden_agent_version": "2"
 }

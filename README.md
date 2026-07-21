@@ -1,15 +1,81 @@
-# bats-core/bats-action
+# Setup Bats and Bats libraries
 
-A GitHub Action for installing Bats and Bats-libs(support, assert, detik, file)
+This GitHub Action installs [Bats](https://github.com/bats-core/bats-core) and the four major bats libraries:
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/bats-core/bats-action](https://github.com/bats-core/bats-action).
+* [bats-support](https://github.com/bats-core/bats-support)
+* [bats-assert](https://github.com/bats-core/bats-assert)
+* [bats-detik](https://github.com/bats-core/bats-detik)
+* [bats-file](https://github.com/bats-core/bats-file)
 
-## Versions
+The action can be also instructed to select which libraries to install.
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| 3.0.0 | [`3.0.0`](https://github.com/chainguard-actions/bats-core-bats-action/tree/3.0.0) | [`2104b40`](https://github.com/bats-core/bats-action/commit/2104b40bb7b6c2d5110b23a26b0bf265ab8027db) |
-| 3.0.1 | [`3.0.1`](https://github.com/chainguard-actions/bats-core-bats-action/tree/3.0.1) | [`42fcc87`](https://github.com/bats-core/bats-action/commit/42fcc8700f773c075a16a90eb11674c0318ad507) |
+## How to use it
+
+``` yaml
+on: [push]
+
+jobs:
+   my_test:
+     runs-on: ubuntu-latest
+     name: Install Bats and bats libs
+     steps:
+       - name: Checkout
+         uses: actions/checkout@v2
+       - name: Setup Bats and bats libs
+         uses: bats-core/bats-action@2.0.0
+```
+
+## Libraries Path
+
+For each of the Bats libraries, you can choose to install them in the default location (`/usr/lib/bats-<lib-name>`) or specify a custom path.
+
+For example, if you want to install `bats-support` in the `./test/bats-support` directory, you can configure it as follows:
+
+
+``` yaml
+# ...
+       - name: Setup Bats and Bats libs
+         uses: bats-core/bats-action@2.0.0
+         with:
+           support-path: ${{ github.workspace }}/test/bats-support
+```
+
+## About Caching
+
+The caching mechanism for the `bats binary` is always available. However, the caching for the `bats libraries` is dependent on the location of each library path. If a library is located within the $HOME directory, caching is supported. Conversely, if a library is located outside the $HOME directory (which is the default location per each library), caching is not supported. This is due to a known limitation with sudo and the cache action, as detailed in this GitHub issue: https://github.com/actions/toolkit/issues/946.
+
+## Inputs
+
+| Key              | Default | Required | Description                                    |
+|------------------|---------|----------|------------------------------------------------|
+| bats-install     | `true`    | false    | Bats installation, cache supported              |
+| bats-version     | `latest`  | false    | Bats version   |
+| support-install  | `true`    | false    | Bats-support installation      |
+| support-version  | `0.3.0`   | false    | Bats-support version       |
+| support-path     | `/usr/lib/bats-support` | false | Bats-support path |
+| support-clean    | `true`    | false    | Bats-support: clean temp files                  |
+| assert-install   | `true`    | false    | Bats-assert installation      |
+| assert-version   | `2.1.0`   | false    | Bats-assert version         |
+| assert-path      | `/usr/lib/bats-assert` | false | Bats-assert path |
+| assert-clean     | `true`    | false    | Bats-assert: clean temp files                   |
+| detik-install    | `true`   | false    | Bats-detik installation        |
+| detik-version    | `1.3.0`   | false    | Bats-detik version        |
+| detik-path       | `/usr/lib/bats-detik` | false | Bats-detik path |
+| detik-clean      | `true`    | false    | Bats-detik: clean temp files                    |
+| file-install     | `true`    | false    | Bats-file installation     |
+| file-version     | `0.4.0`   | false    | Bats-file version            |
+| file-path        | `/usr/lib/bats-file` | false | Bats-file path   |
+| file-clean       | `true`    | false    | Bats-file: clean temp files                     |
+
+## Outputs
+
+| Key              | Description                                    |
+|------------------|------------------------------------------------|
+| bats-installed   | True/False if bats has been installed          |
+| support-installed| True/False if bats-support has been installed  |
+| assert-installed | True/False if bats-assert has been installed   |
+| detik-installed  | True/False if bats-detik has been installed    |
+| file-installed   | True/False if bats-file has been installed     |
 
 ## Privacy
 

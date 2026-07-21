@@ -1,0 +1,84 @@
+name: Test running bats tests after installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          assert-version: "2.1.0"
+          detik-install: "false"
+          file-install: "false"
+
+      - name: Create a sample bats test file
+        run: |
+          cat > /tmp/sample.bats << 'EOF'
+          bats_load_library 'bats-support'
+          bats_load_library 'bats-assert'
+
+          @test "echo hello works" {
+            run echo "hello"
+            assert_success
+            assert_output "hello"
+          }
+
+          @test "true exits 0" {
+            run true
+            assert_success
+          }
+
+          @test "false exits non-zero" {
+            run false
+            assert_failure
+          }
+          EOF
+
+      - name: Run bats tests
+        env:
+          BATS_LIB_PATH: /usr/lib
+        run: |
+          echo "Running bats tests..."
+          if ! bats /tmp/sample.bats; then
+            echo "FAIL: bats tests failed"
+            exit 1
+          fi
+          echo "PASS: bats tests ran successfully"
+
+      - name: Assert bats-installed output
+        env:
+          ACTUAL: ${{ steps.action.outputs.bats-installed }}
+        run: |
+          echo "actual bats-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected bats-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert support-installed output
+        env:
+          ACTUAL: ${{ steps.action.outputs.support-installed }}
+        run: |
+          echo "actual support-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected support-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert assert-installed output
+        env:
+          ACTUAL: ${{ steps.action.outputs.assert-installed }}
+        run: |
+          echo "actual assert-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected assert-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

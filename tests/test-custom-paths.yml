@@ -1,0 +1,94 @@
+name: Test custom installation paths for bats libraries
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          support-path: "/tmp/custom-bats-support"
+          assert-version: "2.1.0"
+          assert-path: "/tmp/custom-bats-assert"
+          detik-version: "1.3.1"
+          detik-path: "/tmp/custom-bats-detik"
+          file-version: "0.4.0"
+          file-path: "/tmp/custom-bats-file"
+
+      - name: Assert bats is installed
+        run: |
+          echo "Checking bats binary..."
+          if ! command -v bats &>/dev/null; then
+            echo "FAIL: bats command not found in PATH"
+            exit 1
+          fi
+          echo "bats version: $(bats --version)"
+          echo "PASS: bats is installed"
+
+      - name: Assert bats-support installed at custom path
+        run: |
+          echo "Checking bats-support at /tmp/custom-bats-support..."
+          if [ ! -f "/tmp/custom-bats-support/load.bash" ]; then
+            echo "FAIL: /tmp/custom-bats-support/load.bash not found"
+            ls /tmp/ || true
+            exit 1
+          fi
+          echo "PASS: bats-support installed at custom path"
+
+      - name: Assert bats-assert installed at custom path
+        run: |
+          echo "Checking bats-assert at /tmp/custom-bats-assert..."
+          if [ ! -f "/tmp/custom-bats-assert/load.bash" ]; then
+            echo "FAIL: /tmp/custom-bats-assert/load.bash not found"
+            ls /tmp/ || true
+            exit 1
+          fi
+          echo "PASS: bats-assert installed at custom path"
+
+      - name: Assert bats-detik installed at custom path
+        run: |
+          echo "Checking bats-detik at /tmp/custom-bats-detik..."
+          if [ ! -d "/tmp/custom-bats-detik" ]; then
+            echo "FAIL: /tmp/custom-bats-detik directory not found"
+            ls /tmp/ || true
+            exit 1
+          fi
+          ls /tmp/custom-bats-detik/
+          echo "PASS: bats-detik installed at custom path"
+
+      - name: Assert bats-file installed at custom path
+        run: |
+          echo "Checking bats-file at /tmp/custom-bats-file..."
+          if [ ! -f "/tmp/custom-bats-file/load.bash" ]; then
+            echo "FAIL: /tmp/custom-bats-file/load.bash not found"
+            ls /tmp/ || true
+            exit 1
+          fi
+          echo "PASS: bats-file installed at custom path"
+
+      - name: Assert all outputs are true
+        env:
+          BATS: ${{ steps.action.outputs.bats-installed }}
+          SUPPORT: ${{ steps.action.outputs.support-installed }}
+          ASSERT: ${{ steps.action.outputs.assert-installed }}
+          DETIK: ${{ steps.action.outputs.detik-installed }}
+          FILE: ${{ steps.action.outputs.file-installed }}
+        run: |
+          echo "bats-installed: $BATS"
+          echo "support-installed: $SUPPORT"
+          echo "assert-installed: $ASSERT"
+          echo "detik-installed: $DETIK"
+          echo "file-installed: $FILE"
+          FAIL=0
+          [ "$BATS" != "true" ] && echo "FAIL: bats-installed expected true" && FAIL=1
+          [ "$SUPPORT" != "true" ] && echo "FAIL: support-installed expected true" && FAIL=1
+          [ "$ASSERT" != "true" ] && echo "FAIL: assert-installed expected true" && FAIL=1
+          [ "$DETIK" != "true" ] && echo "FAIL: detik-installed expected true" && FAIL=1
+          [ "$FILE" != "true" ] && echo "FAIL: file-installed expected true" && FAIL=1
+          [ "$FAIL" = "1" ] && exit 1
+          echo "PASS: all outputs are true"
