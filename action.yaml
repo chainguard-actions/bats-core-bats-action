@@ -1,0 +1,415 @@
+name: Setup Bats and Bats libraries
+description: A GitHub Action for installing Bats and Bats-libs(support, assert, detik, file)
+author: bats-core
+branding:
+  color: yellow
+  icon: command
+inputs:
+  # Bats binary
+  bats-install:
+    description: "Bats installation, default to true"
+    required: false
+    default: true
+  bats-version:
+    description: "Bats version, default to latest (1.11.0 atm)"
+    required: false
+  # support
+  support-install:
+    description: "Bats-support installation, default to true"
+    required: false
+    default: true
+  support-version:
+    description: "Bats-support version, default to latest"
+    required: false
+    default: "0.3.0"
+  support-path:
+    description: "Bats-support path, default to /usr/lib/bats-support"
+    required: false
+    default: "/usr/lib/bats-support"
+  support-clean:
+    description: "Bats-support: clean temp files"
+    required: false
+    default: true
+  # assert
+  assert-install:
+    description: "Bats-assert installation, default to true"
+    required: false
+    default: true
+  assert-version:
+    description: "Bats-assert version, default to latest"
+    required: false
+    default: "2.1.0"
+  assert-path:
+    description: "Bats-assert path, default to /usr/lib/bats-assert"
+    required: false
+    default: "/usr/lib/bats-assert"
+  assert-clean:
+    description: "Bats-assert: clean temp files"
+    required: false
+    default: true
+  # detik
+  detik-install:
+    description: "Bats-detik installation, default to true"
+    required: false
+    default: true
+  detik-version:
+    description: "Bats-detik version, default to latest"
+    required: false
+    default: "1.3.2"
+  detik-path:
+    description: "Bats-detik path, default to /usr/lib/bats-detik"
+    required: false
+    default: "/usr/lib/bats-detik"
+  detik-clean:
+    description: "Bats-detik: clean temp files"
+    required: false
+    default: true
+  # file
+  file-install:
+    description: "Bats-file installation, default to true"
+    required: false
+    default: true
+  file-version:
+    description: "Bats-file version, default to latest"
+    required: false
+    default: "0.4.0"
+  file-path:
+    description: "Bats-file path, default to /usr/lib/bats-file"
+    required: false
+    default: "/usr/lib/bats-file"
+  file-clean:
+    description: "Bats-file: clean temp files"
+    required: false
+    default: true
+outputs:
+  bats-installed:
+    description: "True/False if bats has been installed"
+    value: ${{ (steps.bats-install.outputs.bats-installed != '') }}
+  support-installed:
+    description: "True/False if bats-support has been installed"
+    value: ${{ (steps.support-install.outputs.support-installed != '') }}
+  assert-installed:
+    description: "True/False if bats-assert has been installed"
+    value: ${{ (steps.assert-install.outputs.assert-installed != '') }}
+  detik-installed:
+    description: "True/False if bats-detik has been installed"
+    value: ${{ (steps.detik-install.outputs.detik-installed != '') }}
+  file-installed:
+    description: "True/False if bats-file has been installed"
+    value: ${{ (steps.file-install.outputs.file-installed != '') }}
+  lib-path:
+    description: "Bats lib path to use to load the libraries"
+    value: ${{ steps.libpath.outputs.libpath }}
+  tmp-path:
+    description: "Temporary path with each library tests"
+    value: ${{ steps.set-paths.outputs.tmp-path }}
+runs:
+  using: composite
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    # This action would be much easier if only matrix steps will be supported in a composite action
+    - name: "Set cache for Bats"
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      if: inputs.bats-install == 'true'
+      id: bats-cache
+      with:
+        path: |
+          ~/.local/share/bats
+        key: ${{ runner.os }}-${{ runner.arch }}-bats-${{ inputs.bats-version }}
+    - name: "Set PATH in case of cache-hit"
+      if: inputs.bats-install == 'true' && steps.bats-cache.outputs.cache-hit == 'true'
+      id: bats-cache-path
+      shell: bash
+      run: |
+        DESTDIR="$HOME/.local/share/bats"
+        echo "${DESTDIR}/bin" >> "$GITHUB_PATH"
+    - name: "Download and install Bats"
+      if: inputs.bats-install == 'true' && steps.bats-cache.outputs.cache-hit != 'true'
+      id: bats-install
+      shell: bash
+      env:
+        BATS_VERSION: ${{ inputs.bats-version }}
+      run: |
+        # In $HOME to avoid sudo requirements
+        VERSION="$BATS_VERSION"
+        DESTDIR="$HOME/.local/share/bats"
+        TEMPDIR="/tmp/bats"
+        URL="https://github.com/bats-core/bats-core/"
+
+        # From https://github.com/fluxcd/flux2/blob/44d69d6fc0c353e79c1bad021a4aca135033bce8/action/action.yml#L35
+        if [[ -z "$VERSION" ]] || [[ "$VERSION" = "latest" ]]; then
+          VERSION=$(curl -fsSL --retry 4 --retry-connrefused https://api.github.com/repos/bats-core/bats-core/releases/latest | grep tag_name | cut -d '"' -f 4)
+        fi
+        [[ "$VERSION" == v* ]] && VERSION="${VERSION:1}"
+
+        mkdir -p "${TEMPDIR}"
+        mkdir -p "${DESTDIR}"
+
+        curl -sL --retry 4 --retry-connrefused "${URL}/archive/refs/tags/v${VERSION}.tar.gz" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
+
+        ./install.sh "${DESTDIR}"
+        echo "Bats v${VERSION} installed in ${DESTDIR}"
+        echo "${DESTDIR}/bin" >> "$GITHUB_PATH"
+        echo "bats-installed=true" >> $GITHUB_OUTPUT
+
+        rm -rf "${TEMPDIR}" || exit 0
+    - name: Set paths and commands for libraries
+      shell: bash
+      id: set-paths
+      run: |
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          DEFAULT_BASE_DIR="/usr/local/lib"
+          [[ "${DEFAULT_BASE_DIR}" == "$HOME"* ]] && CMD="" || CMD="sudo"
+          TEMPDIR="/tmp"
+        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          DEFAULT_BASE_DIR="/c/Users/runneradmin"
+          CMD=""
+          TEMPDIR="$HOME/AppData/Local/Temp"
+        else
+          DEFAULT_BASE_DIR="/usr/lib"
+          [[ "${DEFAULT_BASE_DIR}" == "$HOME"* ]] && CMD="" || CMD="sudo"
+          TEMPDIR="/tmp"
+        fi
+
+        echo "_LIB_PATH=$DEFAULT_BASE_DIR" >> /tmp/bats-lib-path
+        echo "DEFAULT_BASE_DIR=$DEFAULT_BASE_DIR" >> $GITHUB_ENV
+        echo "CMD=$CMD" >> $GITHUB_ENV
+        echo "TEMPDIR=$TEMPDIR" >> $GITHUB_ENV
+        echo "tmp-path=$TEMPDIR" >> $GITHUB_OUTPUT
+    - name: "Calculate DESTDIR for Bats-support"
+      if: inputs.support-install == 'true'
+      id: calculate-support-destdir
+      shell: bash
+      env:
+        INPUT_SUPPORT_PATH: ${{ inputs.support-path }}
+      run: |
+        if [ -z "$INPUT_SUPPORT_PATH" ] || [ "$INPUT_SUPPORT_PATH" == "/usr/lib/bats-support" ]; then
+          echo "SUPPORT_DESTDIR=${DEFAULT_BASE_DIR}/bats-support" >> $GITHUB_ENV
+        else
+          safe_support_path=$(printf '%s' "$INPUT_SUPPORT_PATH" | tr -d '\n\r')
+          echo "SUPPORT_DESTDIR=${safe_support_path}" >> $GITHUB_ENV
+        fi
+    - name: "Set cache for Bats-support"
+      if: inputs.support-install == 'true'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      id: support-cache
+      with:
+        path: ${{ env.SUPPORT_DESTDIR }}
+        key: ${{ runner.os }}-${{ runner.arch }}-bats-support-${{ inputs.support-version }}
+    - name: "Download and install Bats-support"
+      if: inputs.support-install == 'true' && steps.support-cache.outputs.cache-hit != 'true'
+      id: support-install
+      shell: bash
+      env:
+        INPUT_SUPPORT_VERSION: ${{ inputs.support-version }}
+        INPUT_SUPPORT_CLEAN: ${{ inputs.support-clean }}
+      run: |
+        VERSION="$INPUT_SUPPORT_VERSION"
+        url="https://github.com/bats-core/bats-support/archive/refs/tags/v${VERSION}.tar.gz"
+        TEMPDIR="${TEMPDIR}/bats-support"
+        DESTDIR="${SUPPORT_DESTDIR}"
+
+        mkdir -p "${TEMPDIR}"
+        ${CMD:+sudo} mkdir -p "${DESTDIR}/src/"
+        curl -sL --retry 4 --retry-connrefused "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
+        # Archlinux style, except that we are not in a fakeroot env
+        ${CMD:+sudo} install -m755 load.bash "${DESTDIR}/load.bash"
+        for fn in src/*.bash; do
+          ${CMD:+sudo} install -m755 "$fn" \
+             "${DESTDIR}/src/$(basename "$fn")"
+        done
+        echo "Bats Support v$VERSION installed in $DESTDIR"
+        echo "support-installed=true" >> $GITHUB_OUTPUT
+        [[ "$INPUT_SUPPORT_CLEAN" == "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+    - name: "Calculate DESTDIR for Bats-assert"
+      if: inputs.assert-install == 'true'
+      id: calculate-assert-destdir
+      shell: bash
+      env:
+        INPUT_ASSERT_PATH: ${{ inputs.assert-path }}
+      run: |
+        if [ -z "$INPUT_ASSERT_PATH" ] || [ "$INPUT_ASSERT_PATH" == "/usr/lib/bats-assert" ]; then
+          echo "ASSERT_DESTDIR=${DEFAULT_BASE_DIR}/bats-assert" >> $GITHUB_ENV
+        else
+          safe_assert_path=$(printf '%s' "$INPUT_ASSERT_PATH" | tr -d '\n\r')
+          echo "ASSERT_DESTDIR=${safe_assert_path}" >> $GITHUB_ENV
+        fi
+    - name: "Set cache for Bats-assert"
+      if: inputs.assert-install == 'true'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      id: assert-cache
+      with:
+        path: ${{ env.ASSERT_DESTDIR }}
+        key: ${{ runner.os }}-${{ runner.arch }}-bats-assert-${{ inputs.assert-version }}
+    - name: "Download and install Bats-assert"
+      if: inputs.assert-install == 'true' && steps.assert-cache.outputs.cache-hit != 'true'
+      id: assert-install
+      shell: bash
+      env:
+        INPUT_ASSERT_VERSION: ${{ inputs.assert-version }}
+        INPUT_ASSERT_CLEAN: ${{ inputs.assert-clean }}
+      run: |
+        VERSION="$INPUT_ASSERT_VERSION"
+        url="https://github.com/bats-core/bats-assert/archive/refs/tags/v${VERSION}.tar.gz"
+        TEMPDIR="${TEMPDIR}/bats-assert"
+        DESTDIR="${ASSERT_DESTDIR}"
+
+        mkdir -p "${TEMPDIR}"
+        ${CMD:+sudo} mkdir -p "${DESTDIR}/src/"
+        curl -sL --retry 4 --retry-connrefused "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
+        # Archlinux style, except that we are not in a fakeroot env
+        ${CMD:+sudo} install -m755 load.bash "${DESTDIR}/load.bash"
+        for fn in src/*.bash; do
+          ${CMD:+sudo} install -m755 "$fn" \
+             "${DESTDIR}/src/$(basename "$fn")"
+        done
+        echo "Bats Assert v$VERSION installed in $DESTDIR"
+        echo "assert-installed=true" >> "$GITHUB_OUTPUT"
+        [[ "$INPUT_ASSERT_CLEAN" == "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+    - name: "Calculate DESTDIR for Bats-detik"
+      if: inputs.detik-install == 'true'
+      id: calculate-detik-destdir
+      shell: bash
+      env:
+        INPUT_DETIK_PATH: ${{ inputs.detik-path }}
+      run: |
+        if [ -z "$INPUT_DETIK_PATH" ] || [ "$INPUT_DETIK_PATH" == "/usr/lib/bats-detik" ]; then
+          echo "DETIK_DESTDIR=${DEFAULT_BASE_DIR}/bats-detik" >> $GITHUB_ENV
+        else
+          safe_detik_path=$(printf '%s' "$INPUT_DETIK_PATH" | tr -d '\n\r')
+          echo "DETIK_DESTDIR=${safe_detik_path}" >> $GITHUB_ENV
+        fi
+    - name: "Set cache for Bats-detik"
+      if: inputs.detik-install == 'true'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      id: detik-cache
+      with:
+        path: ${{ env.DETIK_DESTDIR }}
+        key: ${{ runner.os }}-${{ runner.arch }}-bats-detik-${{ inputs.detik-version }}
+    - name: "Download and install Bats-detik"
+      if: inputs.detik-install == 'true' && steps.detik-cache.outputs.cache-hit != 'true'
+      id: detik-install
+      shell: bash
+      env:
+        INPUT_DETIK_VERSION: ${{ inputs.detik-version }}
+        INPUT_DETIK_CLEAN: ${{ inputs.detik-clean }}
+      run: |
+        VERSION="$INPUT_DETIK_VERSION"
+        url="https://github.com/bats-core/bats-detik/archive/refs/tags/v${VERSION}.tar.gz"
+        TEMPDIR="${TEMPDIR}/bats-detik"
+        DESTDIR="${DETIK_DESTDIR}"
+
+        mkdir -p "${TEMPDIR}"
+        ${CMD:+sudo} mkdir -p "${DESTDIR}/src/"
+        curl -sL --retry 4 --retry-connrefused "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
+        # Archlinux style, except that we are not in a fakeroot env so we need to use sudo
+        for fn in lib/*.bash; do
+          ${CMD:+sudo} install -m755 "$fn" \
+             "${DESTDIR}/$(basename "$fn")"
+        done
+        echo "Bats Detik v$VERSION installed in $DESTDIR"
+        echo "detik-installed=true" >> $GITHUB_OUTPUT
+        [[ "$INPUT_DETIK_CLEAN" == "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+    - name: "Calculate DESTDIR for Bats-file"
+      if: inputs.file-install == 'true'
+      id: calculate-file-destdir
+      shell: bash
+      env:
+        INPUT_FILE_PATH: ${{ inputs.file-path }}
+      run: |
+        if [ -z "$INPUT_FILE_PATH" ] || [ "$INPUT_FILE_PATH" == "/usr/lib/bats-file" ]; then
+          echo "FILE_DESTDIR=${DEFAULT_BASE_DIR}/bats-file" >> $GITHUB_ENV
+        else
+          safe_file_path=$(printf '%s' "$INPUT_FILE_PATH" | tr -d '\n\r')
+          echo "FILE_DESTDIR=${safe_file_path}" >> $GITHUB_ENV
+        fi
+    - name: "Set cache for Bats-file"
+      if: inputs.file-install == 'true'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      id: file-cache
+      with:
+        path: ${{ env.FILE_DESTDIR }}
+        key: ${{ runner.os }}-${{ runner.arch }}-bats-file-${{ inputs.file-version }}
+    - name: "Download and install Bats-file"
+      if: inputs.file-install == 'true' && steps.file-cache.outputs.cache-hit != 'true'
+      id: file-install
+      shell: bash
+      env:
+        INPUT_FILE_VERSION: ${{ inputs.file-version }}
+        INPUT_FILE_CLEAN: ${{ inputs.file-clean }}
+      run: |
+        VERSION="$INPUT_FILE_VERSION"
+        url="https://github.com/bats-core/bats-file/archive/refs/tags/v${VERSION}.tar.gz"
+        TEMPDIR="${TEMPDIR}/bats-file"
+        DESTDIR="${FILE_DESTDIR}"
+
+        mkdir -p "${TEMPDIR}"
+        ${CMD:+sudo} mkdir -p "${DESTDIR}/src/"
+        curl -sL --retry 4 --retry-connrefused "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
+        # Archlinux style, except that we are not in a fakeroot env
+        ${CMD:+sudo} install -m755 load.bash "${DESTDIR}/load.bash"
+        for fn in src/*.bash; do
+          ${CMD:+sudo} install -m755 "$fn" \
+             "${DESTDIR}/src/$(basename "$fn")"
+        done
+        echo "Bats File v$VERSION installed in $DESTDIR"
+        echo "file-installed=true" >> $GITHUB_OUTPUT
+        [[ "$INPUT_FILE_CLEAN" == "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+    - name: "build BATS_LIB_PATH"
+      id: libpath
+      shell: bash
+      run: |
+        # In case of windows if the path passed
+        # as github workspace could be something like
+        # D:\a\bats-action\bats-action/tests
+        # so we need to translate D: into /d/
+        # and replace the wrong slash
+        winfix() {
+          local winpath="$1"
+          echo "$winpath" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|'
+        }
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          S="$(winfix "${SUPPORT_DESTDIR%/*}")"
+          A="$(winfix "${ASSERT_DESTDIR%/*}")"
+          D="$(winfix "${DETIK_DESTDIR%/*}")"
+          F="$(winfix "${FILE_DESTDIR%/*}")"
+          LIB_PATH="${S}:${A}:${D}:${F}"
+        else
+          LIB_PATH="${SUPPORT_DESTDIR%/*}:${ASSERT_DESTDIR%/*}:${DETIK_DESTDIR%/*}:${FILE_DESTDIR%/*}"
+        fi
+        echo "libpath=$LIB_PATH" >> $GITHUB_OUTPUT
+    - name: "Print info"
+      id: info
+      shell: bash
+      env:
+        BATS_INSTALLED: ${{ (steps.bats-install.outputs.bats-installed != '') }}
+        SUPPORT_INSTALLED: ${{ (steps.support-install.outputs.support-installed != '') }}
+        ASSERT_INSTALLED: ${{ (steps.assert-install.outputs.assert-installed != '') }}
+        DETIK_INSTALLED: ${{ (steps.detik-install.outputs.detik-installed != '') }}
+        FILE_INSTALLED: ${{ (steps.file-install.outputs.file-installed != '') }}
+        LIB_PATH: ${{ steps.libpath.outputs.libpath }}
+        TMP_PATH: ${{ steps.set-paths.outputs.tmp-path }}
+      run: |
+        echo "Bats installed: $BATS_INSTALLED"
+        echo "Support installed: $SUPPORT_INSTALLED"
+        echo "Assert installed: $ASSERT_INSTALLED"
+        echo "Detik installed: $DETIK_INSTALLED"
+        echo "File installed: $FILE_INSTALLED"
+        echo "Bats lib to use in BATS_LIB_PATH env $LIB_PATH"
+        echo "Tmp path: $TMP_PATH"

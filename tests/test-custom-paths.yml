@@ -1,0 +1,96 @@
+name: Test custom library installation paths
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          support-path: "/tmp/custom-bats-support"
+          assert-version: "2.1.0"
+          assert-path: "/tmp/custom-bats-assert"
+          detik-install: "false"
+          file-install: "false"
+
+      - name: Assert bats-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.bats-installed }}
+        run: |
+          echo "actual bats-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected bats-installed to be 'true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert support-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.support-installed }}
+        run: |
+          echo "actual support-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected support-installed to be 'true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert assert-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.assert-installed }}
+        run: |
+          echo "actual assert-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected assert-installed to be 'true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert bats-support installed at custom path
+        run: |
+          echo "Checking /tmp/custom-bats-support/load.bash"
+          if [ ! -f "/tmp/custom-bats-support/load.bash" ]; then
+            echo "FAIL: bats-support not found at custom path /tmp/custom-bats-support/load.bash"
+            exit 1
+          fi
+          echo "PASS: bats-support found at custom path"
+
+      - name: Assert bats-assert installed at custom path
+        run: |
+          echo "Checking /tmp/custom-bats-assert/load.bash"
+          if [ ! -f "/tmp/custom-bats-assert/load.bash" ]; then
+            echo "FAIL: bats-assert not found at custom path /tmp/custom-bats-assert/load.bash"
+            exit 1
+          fi
+          echo "PASS: bats-assert found at custom path"
+
+      - name: Assert lib-path contains custom paths
+        env:
+          ACTUAL: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "actual lib-path: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: lib-path is empty"
+            exit 1
+          fi
+          # lib-path should contain the parent of the custom paths (/tmp)
+          if echo "$ACTUAL" | grep -q "/tmp"; then
+            echo "PASS: lib-path contains /tmp as expected for custom paths"
+          else
+            echo "FAIL: lib-path '$ACTUAL' does not contain /tmp"
+            exit 1
+          fi
+
+      - name: Assert bats binary is on PATH and functional
+        run: |
+          if ! command -v bats &>/dev/null; then
+            echo "FAIL: bats binary not found on PATH"
+            exit 1
+          fi
+          echo "bats version: $(bats --version)"
+          echo "PASS"
