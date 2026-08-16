@@ -12,6 +12,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | 2.1.1 | [`2.1.1`](https://github.com/chainguard-actions/bats-core-bats-action/tree/2.1.1) | [`3b6fd9e`](https://github.com/bats-core/bats-action/commit/3b6fd9e3d70ab0587e754b8b6c8aa9c2e6f61d02) |
 | 3.0.0 | [`3.0.0`](https://github.com/chainguard-actions/bats-core-bats-action/tree/3.0.0) | [`2104b40`](https://github.com/bats-core/bats-action/commit/2104b40bb7b6c2d5110b23a26b0bf265ab8027db) |
 | 3.0.1 | [`3.0.1`](https://github.com/chainguard-actions/bats-core-bats-action/tree/3.0.1) | [`42fcc87`](https://github.com/bats-core/bats-action/commit/42fcc8700f773c075a16a90eb11674c0318ad507) |
+| 4.0.0 | [`4.0.0`](https://github.com/chainguard-actions/bats-core-bats-action/tree/4.0.0) | [`77d6fb6`](https://github.com/bats-core/bats-action/commit/77d6fb60505b4d0d1d73e48bd035b55074bbfb43) |
 
 ## Privacy
 
