@@ -1,0 +1,79 @@
+name: Test running bats tests with installed libraries
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          assert-version: "2.1.0"
+          detik-install: "false"
+          file-version: "0.4.0"
+          github-token: ${{ github.token }}
+
+      - name: Assert lib-path output is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "lib-path: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: lib-path output is empty"
+            exit 1
+          fi
+          echo "PASS: lib-path=$ACTUAL"
+
+      - name: Run bats test using bats-support and bats-assert
+        env:
+          LIB_PATH: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "Using BATS_LIB_PATH=$LIB_PATH"
+
+          cat > /tmp/test_with_assert.bats << 'EOF'
+          bats_load_library 'bats-support'
+          bats_load_library 'bats-assert'
+
+          @test "assert_equal passes for equal values" {
+            assert_equal "foo" "foo"
+          }
+
+          @test "assert_output works" {
+            run echo "hello world"
+            assert_output "hello world"
+          }
+
+          @test "assert_success works" {
+            run true
+            assert_success
+          }
+          EOF
+
+          export BATS_LIB_PATH="$LIB_PATH"
+          bats /tmp/test_with_assert.bats
+          echo "PASS: bats tests ran successfully"
+
+      - name: Run bats test using bats-file
+        env:
+          LIB_PATH: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "Using BATS_LIB_PATH=$LIB_PATH"
+
+          cat > /tmp/test_with_file.bats << 'EOF'
+          bats_load_library 'bats-support'
+          bats_load_library 'bats-file'
+
+          @test "assert_file_exists works" {
+            touch /tmp/testfile_bats
+            assert_file_exists /tmp/testfile_bats
+            rm /tmp/testfile_bats
+          }
+          EOF
+
+          export BATS_LIB_PATH="$LIB_PATH"
+          bats /tmp/test_with_file.bats
+          echo "PASS: bats-file tests ran successfully"

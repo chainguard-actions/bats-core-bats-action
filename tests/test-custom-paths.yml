@@ -1,0 +1,134 @@
+name: Test custom library installation paths
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-version: "1.11.0"
+          support-version: "0.3.0"
+          support-path: "/tmp/custom-libs/bats-support"
+          assert-version: "2.1.0"
+          assert-path: "/tmp/custom-libs/bats-assert"
+          detik-install: "false"
+          file-version: "0.4.0"
+          file-path: "/tmp/custom-libs/bats-file"
+          github-token: ${{ github.token }}
+
+      - name: Assert bats is installed
+        run: |
+          if ! command -v bats &>/dev/null; then
+            echo "FAIL: bats command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: bats is installed"
+
+      - name: Assert bats-support installed at custom path
+        run: |
+          echo "Checking bats-support at custom path..."
+          if [ ! -f "/tmp/custom-libs/bats-support/load.bash" ]; then
+            echo "FAIL: /tmp/custom-libs/bats-support/load.bash not found"
+            exit 1
+          fi
+          echo "PASS: bats-support installed at custom path"
+
+      - name: Assert bats-assert installed at custom path
+        run: |
+          echo "Checking bats-assert at custom path..."
+          if [ ! -f "/tmp/custom-libs/bats-assert/load.bash" ]; then
+            echo "FAIL: /tmp/custom-libs/bats-assert/load.bash not found"
+            exit 1
+          fi
+          echo "PASS: bats-assert installed at custom path"
+
+      - name: Assert bats-file installed at custom path
+        run: |
+          echo "Checking bats-file at custom path..."
+          if [ ! -f "/tmp/custom-libs/bats-file/load.bash" ]; then
+            echo "FAIL: /tmp/custom-libs/bats-file/load.bash not found"
+            exit 1
+          fi
+          echo "PASS: bats-file installed at custom path"
+
+      - name: Assert lib-path output contains custom paths
+        env:
+          ACTUAL: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "lib-path: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: lib-path output is empty"
+            exit 1
+          fi
+          # The lib-path should contain the parent of the custom paths
+          if echo "$ACTUAL" | grep -q "/tmp/custom-libs"; then
+            echo "PASS: lib-path contains custom path prefix"
+          else
+            echo "FAIL: lib-path '$ACTUAL' does not contain '/tmp/custom-libs'"
+            exit 1
+          fi
+
+      - name: Assert support-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.support-installed }}
+        run: |
+          echo "support-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected support-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert assert-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.assert-installed }}
+        run: |
+          echo "assert-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected assert-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert file-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.file-installed }}
+        run: |
+          echo "file-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected file-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert detik-installed output is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.detik-installed }}
+        run: |
+          echo "detik-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected detik-installed=false, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Run a simple bats test using installed libraries
+        run: |
+          # Write a simple bats test that uses bats-support and bats-assert
+          cat > /tmp/test_simple.bats << 'EOF'
+          bats_load_library 'bats-support'
+          bats_load_library 'bats-assert'
+
+          @test "simple assertion works" {
+            assert_equal "hello" "hello"
+          }
+          EOF
+
+          # Set BATS_LIB_PATH and run the test
+          export BATS_LIB_PATH="/tmp/custom-libs"
+          bats /tmp/test_simple.bats
+          echo "PASS: bats test ran successfully with custom library paths"

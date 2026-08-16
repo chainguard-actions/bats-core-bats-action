@@ -1,0 +1,136 @@
+name: Test libraries-only installation (skip bats binary)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          bats-install: "false"
+          support-version: "0.3.0"
+          assert-version: "2.1.0"
+          detik-version: "1.3.2"
+          file-version: "0.4.0"
+          github-token: ${{ github.token }}
+
+      - name: Assert bats-installed output is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.bats-installed }}
+        run: |
+          echo "bats-installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected bats-installed=false, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert support-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.support-installed }}
+        run: |
+          echo "support-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected support-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert assert-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.assert-installed }}
+        run: |
+          echo "assert-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected assert-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert detik-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.detik-installed }}
+        run: |
+          echo "detik-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected detik-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert file-installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.file-installed }}
+        run: |
+          echo "file-installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected file-installed=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert bats-support is installed at default path
+        run: |
+          echo "Checking bats-support..."
+          if [ ! -f "/usr/lib/bats-support/load.bash" ]; then
+            echo "FAIL: /usr/lib/bats-support/load.bash not found"
+            exit 1
+          fi
+          echo "PASS: bats-support is installed"
+
+      - name: Assert bats-assert is installed at default path
+        run: |
+          echo "Checking bats-assert..."
+          if [ ! -f "/usr/lib/bats-assert/load.bash" ]; then
+            echo "FAIL: /usr/lib/bats-assert/load.bash not found"
+            exit 1
+          fi
+          echo "PASS: bats-assert is installed"
+
+      - name: Assert bats-detik is installed at default path
+        run: |
+          echo "Checking bats-detik..."
+          if [ ! -d "/usr/lib/bats-detik" ]; then
+            echo "FAIL: /usr/lib/bats-detik directory not found"
+            exit 1
+          fi
+          echo "PASS: bats-detik is installed"
+
+      - name: Assert bats-file is installed at default path
+        run: |
+          echo "Checking bats-file..."
+          if [ ! -f "/usr/lib/bats-file/load.bash" ]; then
+            echo "FAIL: /usr/lib/bats-file/load.bash not found"
+            exit 1
+          fi
+          echo "PASS: bats-file is installed"
+
+      - name: Assert lib-path output is set and contains /usr/lib
+        env:
+          ACTUAL: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "lib-path: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: lib-path output is empty"
+            exit 1
+          fi
+          if echo "$ACTUAL" | grep -q "/usr/lib"; then
+            echo "PASS: lib-path contains /usr/lib"
+          else
+            echo "FAIL: lib-path '$ACTUAL' does not contain '/usr/lib'"
+            exit 1
+          fi
+
+      - name: Assert tmp-path output is /tmp
+        env:
+          ACTUAL: ${{ steps.action.outputs.tmp-path }}
+        run: |
+          echo "tmp-path: $ACTUAL"
+          if [ "$ACTUAL" != "/tmp" ]; then
+            echo "FAIL: expected tmp-path=/tmp, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
