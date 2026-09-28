@@ -10,69 +10,53 @@
 
 **Harden Agent Version:** `2`
 
-Action **bats-core--bats-action/2.1.0** was hardened automatically. 15 finding(s) were identified and resolved across 3 iteration(s).
+Action **bats-core--bats-action/2.1.0** was hardened automatically. 15 finding(s) were identified and resolved across 2 iteration(s).
 
 ## Findings Fixed
 
 ### script-injection (severity: high)
 
-Multiple run: blocks in action.yaml directly interpolate ${{ inputs.* }} expressions inside shell command strings (rule a). Before the shell executes the script, GitHub Actions performs YAML template substitution, so a caller-supplied input value containing shell metacharacters (e.g. `; malicious_cmd`) would be executed as shell code.
+Multiple `run:` blocks in action.yaml directly interpolate `${{ inputs.* }}` expressions inside shell commands (rule a). GitHub Actions performs YAML template substitution before the shell parses the string, so an attacker-controlled input value is spliced raw into the shell, enabling arbitrary command injection.
 
-Affected expressions:
-- Line 128 ("Download and install Bats" step): VERSION=${{ inputs.bats-version }}
-- Line 165 ("Download and install Bats-support" step): VERSION=${{ inputs.support-version }}
-- Line 166 ("Download and install Bats-support" step): DESTDIR=${{ inputs.support-path }}
-- Line 183 ("Download and install Bats-support" step): ${{ inputs.support-clean }} in conditional
-- Line 199 ("Download and install Bats-assert" step): VERSION=${{ inputs.assert-version }}
-- Line 200 ("Download and install Bats-assert" step): DESTDIR=${{ inputs.assert-path }}
-- Line 215 ("Download and install Bats-assert" step): ${{ inputs.assert-clean }} in conditional
-- Line 232 ("Download and install Bats-detik" step): VERSION=${{ inputs.detik-version }}
-- Line 233 ("Download and install Bats-detik" step): DESTDIR=${{ inputs.detik-path }}
-- Line 246 ("Download and install Bats-detik" step): ${{ inputs.detik-clean }} in conditional
-- Line 264 ("Download and install Bats-file" step): VERSION=${{ inputs.file-version }}
-- Line 265 ("Download and install Bats-file" step): DESTDIR=${{ inputs.file-path }}
-- Line 278 ("Download and install Bats-file" step): ${{ inputs.file-clean }} in conditional
-- Lines 287-291 ("Debug print if installed" step): ${{ steps.*.outputs.* }} expressions
+Affected lines and offending expressions:
+- Step "Download and install Bats": `VERSION=${{ inputs.bats-version }}`
+- Step "Download and install Bats-support": `VERSION=${{ inputs.support-version }}`, `DESTDIR=${{ inputs.support-path }}`, `[[ "${{ inputs.support-clean }}" = "true" ]]`
+- Step "Download and install Bats-assert": `VERSION=${{ inputs.assert-version }}`, `DESTDIR=${{ inputs.assert-path }}`, `[[ "${{ inputs.assert-clean }}" = "true" ]]`
+- Step "Download and install Bats-detik": `VERSION=${{ inputs.detik-version }}`, `DESTDIR=${{ inputs.detik-path }}`, `[[ "${{ inputs.detik-clean }}" = "true" ]]`
+- Step "Download and install Bats-file": `VERSION=${{ inputs.file-version }}`, `DESTDIR=${{ inputs.file-path }}`, `[[ "${{ inputs.file-clean }}" = "true" ]]`
 
-Fix: Move each input into an env: block and reference it as a quoted shell variable (e.g. "$VERSION"), never interpolate ${{ }} directly inside a run: script.
+Fix: move each input into an `env:` block and reference it as a quoted shell variable (e.g., `"$VERSION"`) inside the `run:` script.
 
 Locations:
 
-- `action.yaml:128`
-- `action.yaml:165`
-- `action.yaml:166`
-- `action.yaml:183`
-- `action.yaml:199`
-- `action.yaml:200`
-- `action.yaml:215`
-- `action.yaml:232`
-- `action.yaml:233`
-- `action.yaml:246`
-- `action.yaml:264`
-- `action.yaml:265`
-- `action.yaml:278`
-- `action.yaml:287`
+- `action.yaml:100`
+- `action.yaml:130`
+- `action.yaml:131`
+- `action.yaml:148`
+- `action.yaml:163`
+- `action.yaml:164`
+- `action.yaml:181`
+- `action.yaml:196`
+- `action.yaml:197`
+- `action.yaml:213`
+- `action.yaml:228`
+- `action.yaml:229`
+- `action.yaml:245`
 
 ### unpinned-uses (severity: high)
 
-All five uses: references in action.yaml pin to the mutable tag @v4 rather than an immutable 40-character SHA commit hash. If the actions/cache repository is compromised or the tag is moved, the action will silently execute attacker-controlled code.
+All five `uses: actions/cache@v4` references in action.yaml use a mutable version tag (`@v4`) instead of a pinned 40-character commit SHA. A tag can be moved by the upstream repository owner (or a compromised account) to point to malicious code, creating a supply-chain attack vector. Each cache step for bats, bats-support, bats-assert, bats-detik, and bats-file is affected.
 
-Failing references:
-- uses: actions/cache@v4 ("Set cache for Bats" step, line 106)
-- uses: actions/cache@v4 ("Set cache for Bats-support" step, line 153)
-- uses: actions/cache@v4 ("Set cache for Bats-assert" step, line 187)
-- uses: actions/cache@v4 ("Set cache for Bats-detik" step, line 220)
-- uses: actions/cache@v4 ("Set cache for Bats-file" step, line 253)
-
-Fix: Pin each reference to a full SHA, e.g. uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c6158d # v4
+Fix: pin each reference to a full SHA, e.g.:
+  `uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c6158d # v4`
 
 Locations:
 
-- `action.yaml:106`
-- `action.yaml:153`
+- `action.yaml:84`
+- `action.yaml:120`
+- `action.yaml:155`
 - `action.yaml:187`
-- `action.yaml:220`
-- `action.yaml:253`
+- `action.yaml:219`
 
 ### static-inline-injection (severity: high)
 
@@ -182,23 +166,22 @@ Locations:
 
 ### Iteration 1
 
-**Fixes applied:** unpinned-uses, script-injection, static-inline-injection
+**Fixes applied:** script-injection, static-inline-injection, unpinned-uses
 
 **Notes:**
 
-Fixed all findings in hardened/action/action.yaml:
+Fixed action.yaml (the only action file present — no action.yml exists):
 
-1. unpinned-uses: Pinned all 5 `actions/cache@v4` references to the full SHA `0057852bfaa89a56745cba8c7296529d2fc39830` with `# v4` comment.
+1. Pinned all 5 `actions/cache@v4` references to full SHA `0057852bfaa89a56745cba8c7296529d2fc39830` with `# v4` comment.
 
-2. script-injection / static-inline-injection: Moved all ${{ inputs.* }} and ${{ steps.*.outputs.* }} expressions out of run: blocks and into env: blocks for each affected step:
-   - 'Download and install Bats': VERSION env var
-   - 'Download and install Bats-support': VERSION, DESTDIR, SUPPORT_CLEAN env vars
-   - 'Download and install Bats-assert': VERSION, DESTDIR, ASSERT_CLEAN env vars
-   - 'Download and install Bats-detik': VERSION, DESTDIR, DETIK_CLEAN env vars
-   - 'Download and install Bats-file': VERSION, DESTDIR, FILE_CLEAN env vars
-   - 'Debug print if installed': BATS_INSTALLED, SUPPORT_INSTALLED, ASSERT_INSTALLED, DETIK_INSTALLED, FILE_INSTALLED env vars
+2. Moved all `${{ inputs.* }}` expressions from run: blocks into env: blocks for the five install steps:
+   - Bats: VERSION
+   - Bats-support: VERSION, DESTDIR, INPUT_SUPPORT_CLEAN
+   - Bats-assert: VERSION, DESTDIR, INPUT_ASSERT_CLEAN
+   - Bats-detik: VERSION, DESTDIR, INPUT_DETIK_CLEAN
+   - Bats-file: VERSION, DESTDIR, INPUT_FILE_CLEAN
 
-All shell scripts now reference only plain environment variables, preventing shell injection attacks.
+   Shell scripts now reference these as plain env vars ($VERSION, $DESTDIR, $INPUT_*_CLEAN) instead of inline ${{ }} expressions. The Debug print step uses only steps.*.outputs expressions (not user-controlled inputs) so those were left as-is.
 
 ### Iteration 2
 
@@ -206,32 +189,9 @@ All shell scripts now reference only plain environment variables, preventing she
 
 **Notes:**
 
-Fixed unquoted shell variable expansions in all five install steps of action.yaml:
+Fixed two script-injection findings in hardened/action/action.yaml:
 
-1. **bats-install step**: Quoted `$VERSION` in the `[[ "$VERSION" = v* ]]` conditional test; quoted `${URL}`, `${VERSION}`, `${TEMPDIR}`, `${DESTDIR}` in curl URL, mkdir, tar, install.sh, and rm commands; also fixed unquoted `$GITHUB_OUTPUT`.
+1. Finding (a): Moved all ${{ steps.*.outputs.* }} expressions from the 'Debug print if installed' run: block into an env: block with named variables (BATS_INSTALLED, SUPPORT_INSTALLED, ASSERT_INSTALLED, DETIK_INSTALLED, FILE_INSTALLED). The run: script now references plain shell variables.
 
-2. **support-install step**: Quoted `${VERSION}` in URL construction, `${TEMPDIR}`, `${DESTDIR}`, `${url}` in mkdir, curl, install, and rm commands; quoted `$fn` and `$(basename "$fn")` in the for loop.
-
-3. **assert-install step**: Same pattern as support-install — quoted all `${TEMPDIR}`, `${DESTDIR}`, `${url}`, `$fn`, and `$(basename "$fn")` expansions.
-
-4. **detik-install step**: Same pattern — quoted all `${TEMPDIR}`, `${DESTDIR}`, `${url}`, `$fn`, and `$(basename "$fn")` expansions.
-
-5. **file-install step**: Same pattern — quoted all `${TEMPDIR}`, `${DESTDIR}`, `${url}`, `$fn`, and `$(basename "$fn")` expansions.
-
-All input-derived env vars (VERSION, DESTDIR) are already passed via the step's `env:` block (not directly via `${{ }}` in the run script), so the primary fix was ensuring proper double-quoting to prevent shell metacharacter injection.
-
-### Iteration 3
-
-**Fixes applied:** unpinned-uses, missing-permissions
-
-**Notes:**
-
-Fixed all 5 workflow files in hardened/action/.github/workflows/:
-
-1. unpinned-uses: Pinned all mutable action references to full 40-char SHAs:
-   - actions/checkout@v4 → @11d5960a326750d5838078e36cf38b85af677262 # v4 (7 occurrences across 5 files)
-   - bats-core/bats-action@main → @562ebf679115bde788f656cd532408c2d125297d # main (2 occurrences in test-public-action.yaml)
-   - brokenpip3/action-pre-commit-update@main → @24b7a510db4356b7cb0a2d0b8f72d1226fa7195b # main (1 occurrence in update-pre-commit-hooks.yaml)
-
-2. missing-permissions: Added `permissions: {}` top-level block to all 5 workflow files to enforce least-privilege token access.
+2. Finding (b): Added double-quotes around all unquoted variable expansions (${TEMPDIR}, ${DESTDIR}, ${URL}/${url}, ${VERSION}, $fn) in all five install steps (Bats, Bats-support, Bats-assert, Bats-detik, Bats-file). Also fixed the unquoted $GITHUB_OUTPUT redirect in the Bats install step. The ${CMD} variable is intentionally left unquoted as it holds either an empty string or 'sudo' and requires word-splitting to function correctly.
 
