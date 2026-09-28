@@ -119,7 +119,7 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     # This action would be much easier if only matrix steps will be supported in a composite action
     - name: "Set cache for Bats"
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: chainguard-actions/actions-cache@1a492a110f951652a0d2d3327bc20ee36867788e # v4
       if: inputs.bats-install == 'true'
       id: bats-cache
       with:
@@ -138,10 +138,10 @@ runs:
       id: bats-install
       shell: bash
       env:
-        BATS_VERSION: ${{ inputs.bats-version }}
+        INPUT_BATS_VERSION: ${{ inputs.bats-version }}
       run: |
         # In $HOME to avoid sudo requirements
-        VERSION="$BATS_VERSION"
+        VERSION="$INPUT_BATS_VERSION"
         DESTDIR="$HOME/.local/share/bats"
         TEMPDIR="/tmp/bats"
         URL="https://github.com/bats-core/bats-core/"
@@ -165,7 +165,7 @@ runs:
 
         rm -rf "${TEMPDIR}" || exit 0
     - name: "Set cache for Bats-support"
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: chainguard-actions/actions-cache@1a492a110f951652a0d2d3327bc20ee36867788e # v4
       if: inputs.support-install == 'true'
       id: support-cache
       with:
@@ -176,13 +176,12 @@ runs:
       id: support-install
       shell: bash
       env:
-        BATS_SUPPORT_VERSION: ${{ inputs.support-version }}
-        BATS_SUPPORT_PATH: ${{ inputs.support-path }}
-        BATS_SUPPORT_CLEAN: ${{ inputs.support-clean }}
+        INPUT_SUPPORT_VERSION: ${{ inputs.support-version }}
+        INPUT_SUPPORT_PATH: ${{ inputs.support-path }}
+        INPUT_SUPPORT_CLEAN: ${{ inputs.support-clean }}
       run: |
-        VERSION="$BATS_SUPPORT_VERSION"
-        DESTDIR_RAW="$BATS_SUPPORT_PATH"
-        DESTDIR="$(printf '%s' "$DESTDIR_RAW" | tr -d '\n\r')"
+        VERSION="$INPUT_SUPPORT_VERSION"
+        DESTDIR="$INPUT_SUPPORT_PATH"
         TEMPDIR="/tmp/bats-support"
         url="https://github.com/bats-core/bats-support/archive/refs/tags/v${VERSION}.tar.gz"
 
@@ -198,12 +197,10 @@ runs:
         done
         echo "Bats Support v$VERSION installed in $DESTDIR"
         echo "support-installed=true" >> "$GITHUB_OUTPUT"
-        safe_destdir="$(printf '%s' "$DESTDIR" | tr -d '\n\r')"
-        echo "${safe_destdir}/bin" >> "$GITHUB_PATH"
         # Cleanup bats-support if required
-        [[ "$BATS_SUPPORT_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+        [[ "$INPUT_SUPPORT_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
     - name: "Set cache for Bats-assert"
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: chainguard-actions/actions-cache@1a492a110f951652a0d2d3327bc20ee36867788e # v4
       if: inputs.assert-install == 'true'
       id: assert-cache
       with:
@@ -214,13 +211,12 @@ runs:
       id: assert-install
       shell: bash
       env:
-        BATS_ASSERT_VERSION: ${{ inputs.assert-version }}
-        BATS_ASSERT_PATH: ${{ inputs.assert-path }}
-        BATS_ASSERT_CLEAN: ${{ inputs.assert-clean }}
+        INPUT_ASSERT_VERSION: ${{ inputs.assert-version }}
+        INPUT_ASSERT_PATH: ${{ inputs.assert-path }}
+        INPUT_ASSERT_CLEAN: ${{ inputs.assert-clean }}
       run: |
-        VERSION="$BATS_ASSERT_VERSION"
-        DESTDIR_RAW="$BATS_ASSERT_PATH"
-        DESTDIR="$(printf '%s' "$DESTDIR_RAW" | tr -d '\n\r')"
+        VERSION="$INPUT_ASSERT_VERSION"
+        DESTDIR="$INPUT_ASSERT_PATH"
         TEMPDIR="/tmp/bats-assert"
         url="https://github.com/bats-core/bats-assert/archive/refs/tags/v${VERSION}.tar.gz"
 
@@ -236,12 +232,10 @@ runs:
         done
         echo "Bats Assert v$VERSION installed in $DESTDIR"
         echo "assert-installed=true" >> "$GITHUB_OUTPUT"
-        safe_destdir="$(printf '%s' "$DESTDIR" | tr -d '\n\r')"
-        echo "${safe_destdir}/bin" >> "$GITHUB_PATH"
-        # Cleanup bats-assert if required
-        [[ "$BATS_ASSERT_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+        # Cleanup bats-support if required
+        [[ "$INPUT_ASSERT_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
     - name: "Set cache for Bats-detik"
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: chainguard-actions/actions-cache@1a492a110f951652a0d2d3327bc20ee36867788e # v4
       if: inputs.detik-install == 'true'
       id: detik-cache
       with:
@@ -252,13 +246,12 @@ runs:
       id: detik-install
       shell: bash
       env:
-        BATS_DETIK_VERSION: ${{ inputs.detik-version }}
-        BATS_DETIK_PATH: ${{ inputs.detik-path }}
-        BATS_DETIK_CLEAN: ${{ inputs.detik-clean }}
+        INPUT_DETIK_VERSION: ${{ inputs.detik-version }}
+        INPUT_DETIK_PATH: ${{ inputs.detik-path }}
+        INPUT_DETIK_CLEAN: ${{ inputs.detik-clean }}
       run: |
-        VERSION="$BATS_DETIK_VERSION"
-        DESTDIR_RAW="$BATS_DETIK_PATH"
-        DESTDIR="$(printf '%s' "$DESTDIR_RAW" | tr -d '\n\r')"
+        VERSION="$INPUT_DETIK_VERSION"
+        DESTDIR="$INPUT_DETIK_PATH"
         TEMPDIR="/tmp/bats-detik"
         url="https://github.com/bats-core/bats-detik/archive/refs/tags/v${VERSION}.tar.gz"
 
@@ -273,12 +266,10 @@ runs:
         done
         echo "Bats Detik v$VERSION installed in $DESTDIR"
         echo "detik-installed=true" >> "$GITHUB_OUTPUT"
-        safe_destdir="$(printf '%s' "$DESTDIR" | tr -d '\n\r')"
-        echo "${safe_destdir}/bin" >> "$GITHUB_PATH"
-        # Cleanup bats-detik if required
-        [[ "$BATS_DETIK_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+        # Cleanup bats-support if required
+        [[ "$INPUT_DETIK_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
     - name: "Set cache for Bats-file"
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: chainguard-actions/actions-cache@1a492a110f951652a0d2d3327bc20ee36867788e # v4
       if: inputs.file-install == 'true'
       id: file-cache
       with:
@@ -289,13 +280,12 @@ runs:
       id: file-install
       shell: bash
       env:
-        BATS_FILE_VERSION: ${{ inputs.file-version }}
-        BATS_FILE_PATH: ${{ inputs.file-path }}
-        BATS_FILE_CLEAN: ${{ inputs.file-clean }}
+        INPUT_FILE_VERSION: ${{ inputs.file-version }}
+        INPUT_FILE_PATH: ${{ inputs.file-path }}
+        INPUT_FILE_CLEAN: ${{ inputs.file-clean }}
       run: |
-        VERSION="$BATS_FILE_VERSION"
-        DESTDIR_RAW="$BATS_FILE_PATH"
-        DESTDIR="$(printf '%s' "$DESTDIR_RAW" | tr -d '\n\r')"
+        VERSION="$INPUT_FILE_VERSION"
+        DESTDIR="$INPUT_FILE_PATH"
         TEMPDIR="/tmp/bats-file"
         url="https://github.com/bats-core/bats-file/archive/refs/tags/v${VERSION}.tar.gz"
 
@@ -311,10 +301,8 @@ runs:
         done
         echo "Bats File v$VERSION installed in $DESTDIR"
         echo "file-installed=true" >> "$GITHUB_OUTPUT"
-        safe_destdir="$(printf '%s' "$DESTDIR" | tr -d '\n\r')"
-        echo "${safe_destdir}/bin" >> "$GITHUB_PATH"
-        # Cleanup bats-file if required
-        [[ "$BATS_FILE_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
+        # Cleanup bats-support if required
+        [[ "$INPUT_FILE_CLEAN" = "true"  ]] && rm -rf "${TEMPDIR}" || exit 0
     - name: "Debug print if installed"
       if: runner.debug == '1'
       shell: bash
