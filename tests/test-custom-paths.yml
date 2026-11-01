@@ -1,0 +1,54 @@
+name: Test custom library paths
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          support-path: /tmp/custom-libs/bats-support
+          assert-path: /tmp/custom-libs/bats-assert
+          detik-path: /tmp/custom-libs/bats-detik
+          file-path: /tmp/custom-libs/bats-file
+          github-token: ${{ github.token }}
+      - name: Assert lib-path
+        env:
+          LIB_PATH: ${{ steps.action.outputs.lib-path }}
+        run: |
+          echo "actual: $LIB_PATH"
+          if [ "$LIB_PATH" != "/tmp/custom-libs:/tmp/custom-libs:/tmp/custom-libs:/tmp/custom-libs" ]; then
+            echo "FAIL: unexpected lib-path"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert files at custom paths
+        run: |
+          ls -R /tmp/custom-libs || true
+          for f in /tmp/custom-libs/bats-support/load.bash /tmp/custom-libs/bats-assert/load.bash \
+                   /tmp/custom-libs/bats-file/load.bash /tmp/custom-libs/bats-detik/detik.bash; do
+            if [ ! -f "$f" ]; then
+              echo "FAIL: missing $f"
+              exit 1
+            fi
+          done
+          echo "PASS"
+      - name: Run bats with custom lib path
+        env:
+          BATS_LIB_PATH: ${{ steps.action.outputs.lib-path }}
+        run: |
+          mkdir -p /tmp/bats-custom
+          cat > /tmp/bats-custom/t.bats <<'EOF'
+          setup() {
+            bats_load_library bats-support
+            bats_load_library bats-assert
+          }
+          @test "assert from custom path" {
+            run printf 'ok'
+            assert_output "ok"
+          }
+          EOF
+          bats /tmp/bats-custom/t.bats || { echo "FAIL"; exit 1; }
+          echo "PASS"
