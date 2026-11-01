@@ -13,6 +13,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | 3.0.0 | [`3.0.0`](https://github.com/chainguard-actions/bats-core-bats-action/tree/3.0.0) | [`2104b40`](https://github.com/bats-core/bats-action/commit/2104b40bb7b6c2d5110b23a26b0bf265ab8027db) | [`HARDENING.md`](https://github.com/chainguard-actions/bats-core-bats-action/blob/3.0.0/HARDENING.md) |
 | 3.0.1 | [`3.0.1`](https://github.com/chainguard-actions/bats-core-bats-action/tree/3.0.1) | [`42fcc87`](https://github.com/bats-core/bats-action/commit/42fcc8700f773c075a16a90eb11674c0318ad507) | [`HARDENING.md`](https://github.com/chainguard-actions/bats-core-bats-action/blob/3.0.1/HARDENING.md) |
 | 4.0.0 | [`4.0.0`](https://github.com/chainguard-actions/bats-core-bats-action/tree/4.0.0) | [`77d6fb6`](https://github.com/bats-core/bats-action/commit/77d6fb60505b4d0d1d73e48bd035b55074bbfb43) | [`HARDENING.md`](https://github.com/chainguard-actions/bats-core-bats-action/blob/4.0.0/HARDENING.md) |
+| 4.1.0 | [`4.1.0`](https://github.com/chainguard-actions/bats-core-bats-action/tree/4.1.0) | [`3566550`](https://github.com/bats-core/bats-action/commit/3566550e0f594451ac0f58fcbfdeca93aa29a45e) | [`HARDENING.md`](https://github.com/chainguard-actions/bats-core-bats-action/blob/4.1.0/HARDENING.md) |
 
 ## Privacy
 
