@@ -222,6 +222,8 @@ runs:
       if: inputs.support-install == 'true'
       id: calculate-support-destdir
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.support-path }}
       run: |
         if [ -z "$INPUT_PATH" ] || [ "$INPUT_PATH" == "/usr/lib/bats-support" ]; then
           value="${DEFAULT_BASE_DIR}/bats-support"
@@ -230,8 +232,6 @@ runs:
         fi
         safe="$(printf '%s' "$value" | tr -d '\n\r')"
         echo "SUPPORT_DESTDIR=$safe" >> "$GITHUB_ENV"
-      env:
-        INPUT_PATH: ${{ inputs.support-path }}
 
     - name: "Set cache for Bats-support"
       if: inputs.support-install == 'true'
@@ -250,6 +250,8 @@ runs:
         url="https://api.github.com/repos/bats-core/bats-support/tarball/v${VERSION}"
         TEMPDIR="${TEMPDIR}/bats-support"
         DESTDIR="${SUPPORT_DESTDIR}"
+        cmd=()
+        [ -n "$CMD" ] && cmd=("$CMD")
 
         declare -a AUTH_ARGS=()
         if [ "$GITHUB_TOKEN" != "" ]; then
@@ -257,12 +259,12 @@ runs:
         fi
 
         mkdir -p "${TEMPDIR}"
-        ${CMD} mkdir -p "${DESTDIR}/src/"
+        "${cmd[@]}" mkdir -p "${DESTDIR}/src/"
         curl -sL --retry 4 --retry-connrefused "${AUTH_ARGS[@]}" "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
         # Archlinux style, except that we are not in a fakeroot env
-        ${CMD} install -m755 load.bash "${DESTDIR}/load.bash"
+        "${cmd[@]}" install -m755 load.bash "${DESTDIR}/load.bash"
         for fn in src/*.bash; do
-          ${CMD} install -m755 "$fn" \
+          "${cmd[@]}" install -m755 "$fn" \
              "${DESTDIR}/src/$(basename "$fn")"
         done
         echo "Bats Support v$VERSION installed in $DESTDIR"
@@ -277,6 +279,8 @@ runs:
       if: inputs.assert-install == 'true'
       id: calculate-assert-destdir
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.assert-path }}
       run: |
         if [ -z "$INPUT_PATH" ] || [ "$INPUT_PATH" == "/usr/lib/bats-assert" ]; then
           value="${DEFAULT_BASE_DIR}/bats-assert"
@@ -285,8 +289,6 @@ runs:
         fi
         safe="$(printf '%s' "$value" | tr -d '\n\r')"
         echo "ASSERT_DESTDIR=$safe" >> "$GITHUB_ENV"
-      env:
-        INPUT_PATH: ${{ inputs.assert-path }}
 
     - name: "Set cache for Bats-assert"
       if: inputs.assert-install == 'true'
@@ -305,6 +307,8 @@ runs:
         url="https://api.github.com/repos/bats-core/bats-assert/tarball/v${VERSION}"
         TEMPDIR="${TEMPDIR}/bats-assert"
         DESTDIR="${ASSERT_DESTDIR}"
+        cmd=()
+        [ -n "$CMD" ] && cmd=("$CMD")
 
         declare -a AUTH_ARGS=()
         if [ "$GITHUB_TOKEN" != "" ]; then
@@ -312,12 +316,12 @@ runs:
         fi
 
         mkdir -p "${TEMPDIR}"
-        ${CMD} mkdir -p "${DESTDIR}/src/"
+        "${cmd[@]}" mkdir -p "${DESTDIR}/src/"
         curl -sL --retry 4 --retry-connrefused "${AUTH_ARGS[@]}" "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
         # Archlinux style, except that we are not in a fakeroot env
-        ${CMD} install -m755 load.bash "${DESTDIR}/load.bash"
+        "${cmd[@]}" install -m755 load.bash "${DESTDIR}/load.bash"
         for fn in src/*.bash; do
-          ${CMD} install -m755 "$fn" \
+          "${cmd[@]}" install -m755 "$fn" \
              "${DESTDIR}/src/$(basename "$fn")"
         done
         echo "Bats Assert v$VERSION installed in $DESTDIR"
@@ -332,6 +336,8 @@ runs:
       if: inputs.detik-install == 'true'
       id: calculate-detik-destdir
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.detik-path }}
       run: |
         if [ -z "$INPUT_PATH" ] || [ "$INPUT_PATH" == "/usr/lib/bats-detik" ]; then
           value="${DEFAULT_BASE_DIR}/bats-detik"
@@ -340,8 +346,6 @@ runs:
         fi
         safe="$(printf '%s' "$value" | tr -d '\n\r')"
         echo "DETIK_DESTDIR=$safe" >> "$GITHUB_ENV"
-      env:
-        INPUT_PATH: ${{ inputs.detik-path }}
 
     - name: "Set cache for Bats-detik"
       if: inputs.detik-install == 'true'
@@ -360,6 +364,8 @@ runs:
         url="https://api.github.com/repos/bats-core/bats-detik/tarball/v${VERSION}"
         TEMPDIR="${TEMPDIR}/bats-detik"
         DESTDIR="${DETIK_DESTDIR}"
+        cmd=()
+        [ -n "$CMD" ] && cmd=("$CMD")
 
         declare -a AUTH_ARGS=()
         if [ "$GITHUB_TOKEN" != "" ]; then
@@ -367,11 +373,11 @@ runs:
         fi
 
         mkdir -p "${TEMPDIR}"
-        ${CMD} mkdir -p "${DESTDIR}/src/"
+        "${cmd[@]}" mkdir -p "${DESTDIR}/src/"
         curl -sL --retry 4 --retry-connrefused "${AUTH_ARGS[@]}" "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
         # Archlinux style, except that we are not in a fakeroot env so we need to use sudo
         for fn in lib/*.bash; do
-          ${CMD} install -m755 "$fn" \
+          "${cmd[@]}" install -m755 "$fn" \
              "${DESTDIR}/$(basename "$fn")"
         done
         echo "Bats Detik v$VERSION installed in $DESTDIR"
@@ -386,6 +392,8 @@ runs:
       if: inputs.file-install == 'true'
       id: calculate-file-destdir
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.file-path }}
       run: |
         if [ -z "$INPUT_PATH" ] || [ "$INPUT_PATH" == "/usr/lib/bats-file" ]; then
           value="${DEFAULT_BASE_DIR}/bats-file"
@@ -394,8 +402,6 @@ runs:
         fi
         safe="$(printf '%s' "$value" | tr -d '\n\r')"
         echo "FILE_DESTDIR=$safe" >> "$GITHUB_ENV"
-      env:
-        INPUT_PATH: ${{ inputs.file-path }}
 
     - name: "Set cache for Bats-file"
       if: inputs.file-install == 'true'
@@ -414,6 +420,8 @@ runs:
         url="https://api.github.com/repos/bats-core/bats-file/tarball/v${VERSION}"
         TEMPDIR="${TEMPDIR}/bats-file"
         DESTDIR="${FILE_DESTDIR}"
+        cmd=()
+        [ -n "$CMD" ] && cmd=("$CMD")
 
         declare -a AUTH_ARGS=()
         if [ "$GITHUB_TOKEN" != "" ]; then
@@ -421,12 +429,12 @@ runs:
         fi
 
         mkdir -p "${TEMPDIR}"
-        ${CMD} mkdir -p "${DESTDIR}/src/"
+        "${cmd[@]}" mkdir -p "${DESTDIR}/src/"
         curl -sL --retry 4 --retry-connrefused "${AUTH_ARGS[@]}" "${url}" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
         # Archlinux style, except that we are not in a fakeroot env
-        ${CMD} install -m755 load.bash "${DESTDIR}/load.bash"
+        "${cmd[@]}" install -m755 load.bash "${DESTDIR}/load.bash"
         for fn in src/*.bash; do
-          ${CMD} install -m755 "$fn" \
+          "${cmd[@]}" install -m755 "$fn" \
              "${DESTDIR}/src/$(basename "$fn")"
         done
         echo "Bats File v$VERSION installed in $DESTDIR"
@@ -472,13 +480,13 @@ runs:
         ASSERT_INSTALLED: ${{ (steps.assert-install.outputs.assert-installed != '') }}
         DETIK_INSTALLED: ${{ (steps.detik-install.outputs.detik-installed != '') }}
         FILE_INSTALLED: ${{ (steps.file-install.outputs.file-installed != '') }}
-        LIBPATH_OUT: ${{ steps.libpath.outputs.libpath }}
-        TMPPATH_OUT: ${{ steps.set-paths.outputs.tmp-path }}
+        STEP_LIBPATH: ${{ steps.libpath.outputs.libpath }}
+        STEP_TMP_PATH: ${{ steps.set-paths.outputs.tmp-path }}
       run: |
         echo "Bats installed: $BATS_INSTALLED"
         echo "Support installed: $SUPPORT_INSTALLED"
         echo "Assert installed: $ASSERT_INSTALLED"
         echo "Detik installed: $DETIK_INSTALLED"
         echo "File installed: $FILE_INSTALLED"
-        echo "Bats lib to use in BATS_LIB_PATH env $LIBPATH_OUT"
-        echo "Tmp path: $TMPPATH_OUT"
+        echo "Bats lib to use in BATS_LIB_PATH env $STEP_LIBPATH"
+        echo "Tmp path: $STEP_TMP_PATH"

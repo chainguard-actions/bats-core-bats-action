@@ -4,9 +4,8 @@
   "version": "4.1.0",
   "commit_sha": "3566550e0f594451ac0f58fcbfdeca93aa29a45e",
   "url": "https://github.com/bats-core/bats-action",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2",
-  "dependency_fingerprint": "sha256:d2033cbcf113f0edf4e875c91882454cc06d30c6a125c8b0cfe91ae61e25584c"
+  "harden_agent_version": "2"
 }
