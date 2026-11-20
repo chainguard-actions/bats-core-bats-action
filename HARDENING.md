@@ -4,53 +4,149 @@
 
 > This file was generated automatically by the hardening agent.
 
-**Policy SHA:** `d636be7e43ef829af6e853da6b3c7566db9f72fe`
+**Policy SHA:** `374911c4be584df24e6da57af2d990570ef0f859`
 
 **Test Policy SHA:** `843adf9e4b8f85d0c08b27b9d0b09dd094b54702`
 
 **Harden Agent Version:** `2`
 
-Action **bats-core--bats-action/3.0.1** was hardened automatically. 23 finding(s) were identified and resolved across 3 iteration(s).
+Action **bats-core--bats-action/3.0.1** was hardened automatically. 38 finding(s) were identified and resolved across 1 iteration(s).
 
 ## Findings Fixed
 
 ### script-injection (severity: high)
 
-Rule (a): Multiple run: blocks in action.yaml directly interpolate ${{ ... }} expressions inside shell commands, enabling script injection. Affected steps: (1) 'Download and install Bats': VERSION=${{ inputs.bats-version }} at line 134, and ${{ github.token }} in two curl commands at lines 141 and 148. (2) 'Calculate DESTDIR for Bats-support': ${{ inputs.support-path }} in shell if-test and echo at line 185. (3) 'Download and install Bats-support': VERSION=${{ inputs.support-version }} and ${{ inputs.support-clean }} interpolated directly. (4) 'Calculate DESTDIR for Bats-assert': ${{ inputs.assert-path }} interpolated directly. (5) 'Download and install Bats-assert': VERSION=${{ inputs.assert-version }} and ${{ inputs.assert-clean }} interpolated directly. (6) 'Calculate DESTDIR for Bats-detik': ${{ inputs.detik-path }} interpolated directly. (7) 'Download and install Bats-detik': VERSION=${{ inputs.detik-version }} and ${{ inputs.detik-clean }} interpolated directly. (8) 'Calculate DESTDIR for Bats-file': ${{ inputs.file-path }} interpolated directly. (9) 'Download and install Bats-file': VERSION=${{ inputs.file-version }} and ${{ inputs.file-clean }} interpolated directly. (10) 'Print info': ${{ steps.*.outputs.* }} expressions in echo commands. All ${{ }} expressions in run: blocks must be moved to env: variables and referenced as "$VAR" in the shell.
+Rule (a) and (b): step 'Download and install Bats' puts expressions straight into the script: `VERSION=${{ inputs.bats-version }}` and `-H "Authorization: token ${{ github.token }}"`. It also expands variables without quotes (${TEMPDIR}, ${DESTDIR}, and ${URL}/archive/refs/tags/v${VERSION}.tar.gz, where VERSION comes from the input).
 
 Locations:
 
 - `action.yaml:134`
 - `action.yaml:141`
 - `action.yaml:148`
-- `action.yaml:185`
-- `action.yaml:188`
-- `action.yaml:199`
-- `action.yaml:213`
-- `action.yaml:220`
-- `action.yaml:223`
-- `action.yaml:233`
-- `action.yaml:247`
-- `action.yaml:254`
-- `action.yaml:257`
-- `action.yaml:267`
-- `action.yaml:281`
-- `action.yaml:288`
-- `action.yaml:291`
-- `action.yaml:301`
-- `action.yaml:315`
-- `action.yaml:338`
 
-### github-env-injection (severity: high)
+### script-injection (severity: high)
 
-Four run: blocks write ${{ inputs.*-path }} values directly to $GITHUB_ENV without the required sanitization step (printf '%s' ... | tr -d '\n\r'). An attacker-controlled path input containing newlines can inject arbitrary environment variables into subsequent steps. (1) 'Calculate DESTDIR for Bats-support': echo "SUPPORT_DESTDIR=${{ inputs.support-path }}" >> $GITHUB_ENV. (2) 'Calculate DESTDIR for Bats-assert': echo "ASSERT_DESTDIR=${{ inputs.assert-path }}" >> $GITHUB_ENV. (3) 'Calculate DESTDIR for Bats-detik': echo "DETIK_DESTDIR=${{ inputs.detik-path }}" >> $GITHUB_ENV. (4) 'Calculate DESTDIR for Bats-file': echo "FILE_DESTDIR=${{ inputs.file-path }}" >> $GITHUB_ENV. Each should sanitize first: safe=$(printf '%s' "$INPUT_PATH" | tr -d '\n\r') before writing to $GITHUB_ENV.
+Rule (a): step 'Calculate DESTDIR for Bats-support' puts ${{ inputs.support-path }} straight into the script: `if [ -z "${{ inputs.support-path }}" ] ...` and `echo "SUPPORT_DESTDIR=${{ inputs.support-path }}"`.
 
 Locations:
 
-- `action.yaml:188`
-- `action.yaml:223`
-- `action.yaml:257`
-- `action.yaml:291`
+- `action.yaml:186`
+
+### script-injection (severity: high)
+
+Rule (a) and (b): step 'Download and install Bats-support' puts `VERSION=${{ inputs.support-version }}` and `[[ "${{ inputs.support-clean }}" == "true" ]]` straight into the script. It also expands workflow-controlled values without quotes: ${url}, ${DESTDIR} (from env SUPPORT_DESTDIR), ${CMD} and ${TEMPDIR}.
+
+Locations:
+
+- `action.yaml:205`
+- `action.yaml:221`
+
+### script-injection (severity: high)
+
+Rule (a): step 'Calculate DESTDIR for Bats-assert' puts ${{ inputs.assert-path }} straight into the script, in the if test and in the echo to $GITHUB_ENV.
+
+Locations:
+
+- `action.yaml:228`
+
+### script-injection (severity: high)
+
+Rule (a) and (b): step 'Download and install Bats-assert' puts `VERSION=${{ inputs.assert-version }}` and `[[ "${{ inputs.assert-clean }}" == "true" ]]` straight into the script. It also expands ${url}, ${DESTDIR} (from ASSERT_DESTDIR), ${CMD} and ${TEMPDIR} without quotes.
+
+Locations:
+
+- `action.yaml:247`
+- `action.yaml:263`
+
+### script-injection (severity: high)
+
+Rule (a): step 'Calculate DESTDIR for Bats-detik' puts ${{ inputs.detik-path }} straight into the script, in the if test and in the echo to $GITHUB_ENV.
+
+Locations:
+
+- `action.yaml:270`
+
+### script-injection (severity: high)
+
+Rule (a) and (b): step 'Download and install Bats-detik' puts `VERSION=${{ inputs.detik-version }}` and `[[ "${{ inputs.detik-clean }}" == "true" ]]` straight into the script. It also expands ${url}, ${DESTDIR}, ${CMD} and ${TEMPDIR} without quotes.
+
+Locations:
+
+- `action.yaml:289`
+- `action.yaml:304`
+
+### script-injection (severity: high)
+
+Rule (a): step 'Calculate DESTDIR for Bats-file' puts ${{ inputs.file-path }} straight into the script, in the if test and in the echo to $GITHUB_ENV.
+
+Locations:
+
+- `action.yaml:311`
+
+### script-injection (severity: high)
+
+Rule (a) and (b): step 'Download and install Bats-file' puts `VERSION=${{ inputs.file-version }}` and `[[ "${{ inputs.file-clean }}" == "true" ]]` straight into the script. It also expands ${url}, ${DESTDIR}, ${CMD} and ${TEMPDIR} without quotes.
+
+Locations:
+
+- `action.yaml:330`
+- `action.yaml:346`
+
+### script-injection (severity: high)
+
+Rule (b): step 'build BATS_LIB_PATH' expands inherited env vars without quotes inside command substitutions: `S="$(winfix ${SUPPORT_DESTDIR%/*})"`, and the same for ASSERT_DESTDIR, DETIK_DESTDIR and FILE_DESTDIR. These values come from the *-path inputs.
+
+Locations:
+
+- `action.yaml:362`
+
+### script-injection (severity: high)
+
+Rule (a): step 'Print info' puts expressions straight into the script, e.g. `echo "Bats lib to use in BATS_LIB_PATH env ${{ steps.libpath.outputs.libpath }}"` and `echo "Tmp path: ${{ steps.set-paths.outputs.tmp-path }}"`. The libpath output comes from the *-path inputs.
+
+Locations:
+
+- `action.yaml:377`
+
+### github-env-injection (severity: high)
+
+Step 'Calculate DESTDIR for Bats-support' writes `echo "SUPPORT_DESTDIR=${{ inputs.support-path }}" >> $GITHUB_ENV` with no printf '%s' | tr -d '\n\r' cleanup first.
+
+Locations:
+
+- `action.yaml:189`
+
+### github-env-injection (severity: high)
+
+Step 'Calculate DESTDIR for Bats-assert' writes `echo "ASSERT_DESTDIR=${{ inputs.assert-path }}" >> $GITHUB_ENV` with no newline cleanup first.
+
+Locations:
+
+- `action.yaml:231`
+
+### github-env-injection (severity: high)
+
+Step 'Calculate DESTDIR for Bats-detik' writes `echo "DETIK_DESTDIR=${{ inputs.detik-path }}" >> $GITHUB_ENV` with no newline cleanup first.
+
+Locations:
+
+- `action.yaml:273`
+
+### github-env-injection (severity: high)
+
+Step 'Calculate DESTDIR for Bats-file' writes `echo "FILE_DESTDIR=${{ inputs.file-path }}" >> $GITHUB_ENV` with no newline cleanup first.
+
+Locations:
+
+- `action.yaml:314`
+
+### github-env-injection (severity: high)
+
+Step 'build BATS_LIB_PATH' writes `echo "libpath=$LIB_PATH" >> $GITHUB_OUTPUT` with no newline cleanup first. LIB_PATH is built from the inherited env vars SUPPORT_DESTDIR, ASSERT_DESTDIR, DETIK_DESTDIR and FILE_DESTDIR, which come from the inputs.
+
+Locations:
+
+- `action.yaml:370`
 
 ### static-inline-injection (severity: high)
 
@@ -220,49 +316,122 @@ Locations:
 
 - `action.yml:346`
 
+### prior-fix (severity: high)
+
+Carried forward from this version's previous harden, which fixed it; fix it again unless the code no longer has the problem. The previous harden changed action.yaml without recording a finding for it, and this analysis reported nothing there. Re-apply its security changes unless the code no longer needs them. The previous patch:
+```diff
+diff --git a/action.yaml b/action.yaml
+index 349275f..e716d00 100644
+--- a/action.yaml
++++ b/action.yaml
+@@ -103,10 +103,26 @@ outputs:
+   tmp-path:
+     description: "Temporary path with each library tests"
+     value: ${{ steps.set-paths.outputs.tmp-path }}
+-
+ runs:
+   using: composite
+   steps:
+     # This action would be much easier if only matrix steps will be supported in a composite action
+     - name: "Set cache for Bats"
+       uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+@@ -116,7 +132,6 @@ runs:
+         path: |
+           ~/.local/share/bats
+         key: ${{ runner.os }}-${{ runner.arch }}-bats-${{ inputs.bats-version }}
+-
+     - name: "Set PATH in case of cache-hit"
+       if: inputs.bats-install == 'true' && steps.bats-cache.outputs.cache-hit == 'true'
+       id: bats-cache-path
+@@ -124,36 +139,37 @@ runs:
+       run: |
+         DESTDIR="$HOME/.local/share/bats"
+         echo "${DESTDIR}/bin" >> "$GITHUB_PATH"
+-
+     - name: "Download and install Bats"
+       if: inputs.bats-install == 'true' && steps.bats-cache.outputs.cache-hit != 'true'
+       id: bats-install
+       shell: bash
++      env:
++        BATS_VERSION: ${{ inputs.bats-version }}
++        GITHUB_TOKEN: ${{ github.token }}
+       run: |
+         # In $HOME to avoid sudo requirements
+-        VERSION=${{ inputs.bats-version }}
++        VERSION="$BATS_VERSION"
+         DESTDIR="$HOME/.local/share/bats"
+         TEMPDIR="/tmp/bats"
+         URL="https://github.com/bats-core/bats-core/"
+ 
+         # From https://github.com/fluxcd/flux2/blob/44d69d6fc0c353e79c1bad021a4aca135033bce8/action/action.yml#L35
+         if [[ -z "$VERSION" ]] || [[ "$VERSION" = "latest" ]]; then
+-          VERSION=$(curl -fsSL --retry 4 --retry-connrefused -H "Authorization: token ${{ github.token }}" https://api.github.com/repos/bats-core/bats-core/releases/latest | grep tag_name | cut -d '"' -f 4)
++          VERSION=$(curl -fsSL --retry 4 --retry-connrefused -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/bats-core/bats-core/releases/latest | grep tag_name | cut -d '"' -f 4)
+         fi
+-        [[ $VERSION == v* ]] && VERSION="${VERSION:1}"
++        [[ "$VERSION" == v* ]] && VERSION="${VERSION:1}"
+ 
+-        mkdir -p ${TEMPDIR}
+-        mkdir -p ${DESTDIR}
++        mkdir -p "${TEMPDIR}"
++        mkdir -p "${DESTDIR}"
+ 
+-        curl -sL --retry 4 --retry-connrefused -H "Authorization: token ${{ github.token }}" ${URL}/archive/refs/tags/v${VERSION}.tar.gz | tar xz -C ${TEMPDIR} --strip-components 1 && cd ${TEMPDIR}
++        curl -sL --retry 4 --retry-connrefused -H "Authorization: token $GITHUB_TOKEN" "${URL}/archive/refs/tags/v${VERSION}.tar.gz" | tar xz -C "${TEMPDIR}" --strip-components 1 && cd "${TEMPDIR}"
+ 
+-        ./install.sh ${DESTDIR}
++        ./install.sh "${DESTDIR}"
+         echo "Bats v${VERSION} installed in ${DESTDIR}"
+         echo "${DESTDIR}/bin" >> "$GITHUB_PATH"
+-        echo "bats-installed=true" >> $GITHUB_OUTPUT
+-
+-        rm -rf ${TEMPDIR} || exit 0
++        echo "bats-installed=true" >> "$GITHUB_OUTPUT"
+ 
++        rm -rf "${TEMPDIR}" || exit 0
+     - name: Set paths and commands for libraries
+       shell: bash
+       id: set-paths
+@@ -177,18 +193,19 @@ runs:
+         echo "CMD=$CMD" >> $GITHUB_ENV
+         echo "TEMPDIR=$TEMPDIR" >> $GITHUB_ENV
+         echo "tmp-path=$TEMPDIR" >> $GITHUB_OUTPUT
+-
+     - name: "Calculate DESTDIR for Bats-support"
+       if: inputs.support-install == 'true'
+       id: calculate-support-destdir
+       shell: bash
++      env:
++        SUPPORT_PATH: ${{ inputs.support-path }}
+       run: |
+-        if [ -z "${{ inputs.support-path }}" ] || [ "${{ inputs.support-path }}" == "/usr/lib/bats-support" ]; then
++        if [ -z "$SUPPORT_PATH" ] || [ "$SUPPORT_PATH" == "/usr/lib/bats-support" ]; then
+           echo "SUPPORT_DESTDIR=${DEFAULT_BASE_DIR}/bats-support" >> $GITHUB_ENV
+         else
+-          echo "SUPPORT_DESTDIR=${{ inputs.support-path }}" >> $GITHUB_ENV
++          safe=$(printf '%s' "$SUPPORT_PATH" | tr -d '\n\r')
++          echo "SUPPORT_DESTDIR=$safe" >> $GITHUB_E
+... (truncated)
+```
+
+Locations:
+
+- `action.yaml`
+
 ## Iteration Notes
 
 ### Iteration 1
 
-**Fixes applied:** script-injection, github-env-injection, static-inline-injection
+**Fixes applied:** script-injection, github-env-injection, static-inline-injection, prior-fix
 
 **Notes:**
 
-Fixed all script injection and github-env-injection findings in hardened/action/action.yaml:
+I fixed every finding in action.yaml. Nothing was tested or run after the edit.
 
-1. 'Download and install Bats': Moved ${{ inputs.bats-version }} → BATS_VERSION and ${{ github.token }} → GITHUB_TOKEN into env: block; referenced as $BATS_VERSION and $GITHUB_TOKEN in shell.
+- **Script injection:** every `${{ }}` expression that sat inside a `run:` block now goes through the step's `env:` block instead. This covers the bats/support/assert/detik/file version, path and clean inputs, `github.token`, and the step outputs used in 'Print info'.
+- **Quoting:** the paths, URLs and loop variables (TEMPDIR, DESTDIR, url, fn) are now in double quotes, including the winfix arguments in 'build BATS_LIB_PATH'. `${CMD}` is still unquoted on purpose. It is either `sudo` or empty, set by the action itself, and quoting it would break the empty case.
+- **Env/output writes:** the four `*_DESTDIR` values written to `$GITHUB_ENV` and the `libpath` value written to `$GITHUB_OUTPUT` now have newlines stripped first (`printf '%s' | tr -d '\n\r'`).
+- **Previous harden:** its changes are applied again. `$GITHUB_ENV` and `$GITHUB_OUTPUT` are now quoted wherever they are written.
 
-2. 'Calculate DESTDIR for Bats-support': Moved ${{ inputs.support-path }} → SUPPORT_PATH into env: block; added sanitization (printf '%s' "$SUPPORT_PATH" | tr -d '\n\r') before writing to $GITHUB_ENV.
-
-3. 'Download and install Bats-support': Moved ${{ inputs.support-version }} → SUPPORT_VERSION and ${{ inputs.support-clean }} → SUPPORT_CLEAN into env: block.
-
-4. 'Calculate DESTDIR for Bats-assert': Moved ${{ inputs.assert-path }} → ASSERT_PATH into env: block; added sanitization before writing to $GITHUB_ENV.
-
-5. 'Download and install Bats-assert': Moved ${{ inputs.assert-version }} → ASSERT_VERSION and ${{ inputs.assert-clean }} → ASSERT_CLEAN into env: block.
-
-6. 'Calculate DESTDIR for Bats-detik': Moved ${{ inputs.detik-path }} → DETIK_PATH into env: block; added sanitization before writing to $GITHUB_ENV.
-
-7. 'Download and install Bats-detik': Moved ${{ inputs.detik-version }} → DETIK_VERSION and ${{ inputs.detik-clean }} → DETIK_CLEAN into env: block.
-
-8. 'Calculate DESTDIR for Bats-file': Moved ${{ inputs.file-path }} → FILE_PATH into env: block; added sanitization before writing to $GITHUB_ENV.
-
-9. 'Download and install Bats-file': Moved ${{ inputs.file-version }} → FILE_VERSION and ${{ inputs.file-clean }} → FILE_CLEAN into env: block.
-
-10. 'Print info': Moved all ${{ steps.*.outputs.* }} expressions into env: block (BATS_INSTALLED, SUPPORT_INSTALLED, ASSERT_INSTALLED, DETIK_INSTALLED, FILE_INSTALLED, LIB_PATH, TMP_PATH) and referenced as plain env vars in shell.
-
-### Iteration 2
-
-**Fixes applied:** script-injection, github-env-injection
-
-**Notes:**
-
-Fixed all unquoted variable expansions in 5 install steps (bats-install, support-install, assert-install, detik-install, file-install) by adding double quotes around ${url}, ${TEMPDIR}, ${DESTDIR}, $fn, $(basename $fn), and other variables sourced from user-controlled inputs. Fixed github-env-injection in the libpath step by sanitizing LIB_PATH with `printf '%s' "$LIB_PATH" | tr -d '\n\r'` before writing to $GITHUB_OUTPUT.
-
-### Iteration 3
-
-**Fixes applied:** script-injection
-
-**Notes:**
-
-Fixed the unquoted shell variable expansion in the 'Download and install Bats' step (id: bats-install) in hardened/action/action.yaml. Changed `[[ $VERSION == v* ]]` to `[[ "$VERSION" == v* ]]` on line 130 to properly double-quote the VERSION variable (which is sourced from the attacker-controllable input `inputs.bats-version`). While bash's [[ ]] suppresses word splitting, double-quoting is still required as a best practice to prevent any potential injection from untrusted data.
+The action's behaviour is otherwise the same as upstream. Every shell is still bash, and the `actions/cache` pin was already a full commit SHA, so it is unchanged.
 
