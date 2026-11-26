@@ -144,8 +144,7 @@ runs:
       shell: bash
       run: |
         DESTDIR="$HOME/.local/share/bats"
-        safe=$(printf '%s' "${DESTDIR}/bin" | tr -d '\n\r')
-        echo "$safe" >> "$GITHUB_PATH"
+        echo "${DESTDIR}/bin" >> "$GITHUB_PATH"
 
     - name: "Download and install Bats"
       if: inputs.bats-install == 'true' && steps.bats-cache.outputs.cache-hit != 'true'
@@ -176,8 +175,7 @@ runs:
 
         ./install.sh "${DESTDIR}"
         echo "Bats v${VERSION} installed in ${DESTDIR}"
-        safe=$(printf '%s' "${DESTDIR}/bin" | tr -d '\n\r')
-        echo "$safe" >> "$GITHUB_PATH"
+        echo "${DESTDIR}/bin" >> "$GITHUB_PATH"
         echo "bats-installed=true" >> "$GITHUB_OUTPUT"
 
         rm -rf "${TEMPDIR}" || exit 0
@@ -203,12 +201,11 @@ runs:
           TEMPDIR="/tmp"
         fi
 
-        safe_tempdir=$(printf '%s' "$TEMPDIR" | tr -d '\n\r')
         echo "_LIB_PATH=$DEFAULT_BASE_DIR" >> /tmp/bats-lib-path
         echo "DEFAULT_BASE_DIR=$DEFAULT_BASE_DIR" >> "$GITHUB_ENV"
         echo "CMD=$CMD" >> "$GITHUB_ENV"
-        echo "TEMPDIR=$safe_tempdir" >> "$GITHUB_ENV"
-        echo "tmp-path=$safe_tempdir" >> "$GITHUB_OUTPUT"
+        echo "TEMPDIR=$TEMPDIR" >> "$GITHUB_ENV"
+        echo "tmp-path=$TEMPDIR" >> "$GITHUB_OUTPUT"
 
     - name: "Calculate DESTDIR for Bats-support"
       if: inputs.support-install == 'true'
@@ -218,10 +215,11 @@ runs:
         INPUT_SUPPORT_PATH: ${{ inputs.support-path }}
       run: |
         if [ -z "$INPUT_SUPPORT_PATH" ] || [ "$INPUT_SUPPORT_PATH" == "/usr/lib/bats-support" ]; then
-          safe=$(printf '%s' "${DEFAULT_BASE_DIR}/bats-support" | tr -d '\n\r')
+          value="${DEFAULT_BASE_DIR}/bats-support"
         else
-          safe=$(printf '%s' "$INPUT_SUPPORT_PATH" | tr -d '\n\r')
+          value="$INPUT_SUPPORT_PATH"
         fi
+        safe=$(printf '%s' "$value" | tr -d '\n\r')
         echo "SUPPORT_DESTDIR=$safe" >> "$GITHUB_ENV"
 
     - name: "Set cache for Bats-support"
@@ -272,10 +270,11 @@ runs:
         INPUT_ASSERT_PATH: ${{ inputs.assert-path }}
       run: |
         if [ -z "$INPUT_ASSERT_PATH" ] || [ "$INPUT_ASSERT_PATH" == "/usr/lib/bats-assert" ]; then
-          safe=$(printf '%s' "${DEFAULT_BASE_DIR}/bats-assert" | tr -d '\n\r')
+          value="${DEFAULT_BASE_DIR}/bats-assert"
         else
-          safe=$(printf '%s' "$INPUT_ASSERT_PATH" | tr -d '\n\r')
+          value="$INPUT_ASSERT_PATH"
         fi
+        safe=$(printf '%s' "$value" | tr -d '\n\r')
         echo "ASSERT_DESTDIR=$safe" >> "$GITHUB_ENV"
 
     - name: "Set cache for Bats-assert"
@@ -326,10 +325,11 @@ runs:
         INPUT_DETIK_PATH: ${{ inputs.detik-path }}
       run: |
         if [ -z "$INPUT_DETIK_PATH" ] || [ "$INPUT_DETIK_PATH" == "/usr/lib/bats-detik" ]; then
-          safe=$(printf '%s' "${DEFAULT_BASE_DIR}/bats-detik" | tr -d '\n\r')
+          value="${DEFAULT_BASE_DIR}/bats-detik"
         else
-          safe=$(printf '%s' "$INPUT_DETIK_PATH" | tr -d '\n\r')
+          value="$INPUT_DETIK_PATH"
         fi
+        safe=$(printf '%s' "$value" | tr -d '\n\r')
         echo "DETIK_DESTDIR=$safe" >> "$GITHUB_ENV"
 
     - name: "Set cache for Bats-detik"
@@ -379,10 +379,11 @@ runs:
         INPUT_FILE_PATH: ${{ inputs.file-path }}
       run: |
         if [ -z "$INPUT_FILE_PATH" ] || [ "$INPUT_FILE_PATH" == "/usr/lib/bats-file" ]; then
-          safe=$(printf '%s' "${DEFAULT_BASE_DIR}/bats-file" | tr -d '\n\r')
+          value="${DEFAULT_BASE_DIR}/bats-file"
         else
-          safe=$(printf '%s' "$INPUT_FILE_PATH" | tr -d '\n\r')
+          value="$INPUT_FILE_PATH"
         fi
+        safe=$(printf '%s' "$value" | tr -d '\n\r')
         echo "FILE_DESTDIR=$safe" >> "$GITHUB_ENV"
 
     - name: "Set cache for Bats-file"
@@ -460,13 +461,13 @@ runs:
         ASSERT_INSTALLED: ${{ (steps.assert-install.outputs.assert-installed != '') }}
         DETIK_INSTALLED: ${{ (steps.detik-install.outputs.detik-installed != '') }}
         FILE_INSTALLED: ${{ (steps.file-install.outputs.file-installed != '') }}
-        LIBPATH_OUT: ${{ steps.libpath.outputs.libpath }}
-        TMP_PATH_OUT: ${{ steps.set-paths.outputs.tmp-path }}
+        LIBPATH_OUTPUT: ${{ steps.libpath.outputs.libpath }}
+        TMP_PATH_OUTPUT: ${{ steps.set-paths.outputs.tmp-path }}
       run: |
         echo "Bats installed: $BATS_INSTALLED"
         echo "Support installed: $SUPPORT_INSTALLED"
         echo "Assert installed: $ASSERT_INSTALLED"
         echo "Detik installed: $DETIK_INSTALLED"
         echo "File installed: $FILE_INSTALLED"
-        echo "Bats lib to use in BATS_LIB_PATH env $LIBPATH_OUT"
-        echo "Tmp path: $TMP_PATH_OUT"
+        echo "Bats lib to use in BATS_LIB_PATH env $LIBPATH_OUTPUT"
+        echo "Tmp path: $TMP_PATH_OUTPUT"

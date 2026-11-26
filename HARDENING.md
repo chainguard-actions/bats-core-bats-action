@@ -10,13 +10,13 @@
 
 **Harden Agent Version:** `2`
 
-Action **bats-core--bats-action/4.0.0** was hardened automatically. 38 finding(s) were identified and resolved across 3 iteration(s).
+Action **bats-core--bats-action/4.0.0** was hardened automatically. 38 finding(s) were identified and resolved across 1 iteration(s).
 
 ## Findings Fixed
 
 ### script-injection (severity: high)
 
-Step 'Download and install Bats': (a) puts an expression straight into the run script: `VERSION=${{ inputs.bats-version }}`. (b) It also expands ${TEMPDIR}/${DESTDIR} without quotes (`mkdir -p ${TEMPDIR}`, `./install.sh ${DESTDIR}`, `rm -rf ${TEMPDIR}`).
+Rule (a) and (b), step 'Download and install Bats': `VERSION=${{ inputs.bats-version }}` puts an expression straight into the script. Later lines also expand variables unquoted: `mkdir -p ${TEMPDIR}`, `mkdir -p ${DESTDIR}` and `[[ $VERSION == v* ]]`.
 
 Locations:
 
@@ -24,71 +24,79 @@ Locations:
 
 ### script-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-support': (a) puts expressions straight into the run script: `if [ -z "${{ inputs.support-path }}" ] || [ "${{ inputs.support-path }}" == ...` and `echo "SUPPORT_DESTDIR=${{ inputs.support-path }}" >> $GITHUB_ENV`.
+Rule (a), step 'Calculate DESTDIR for Bats-support': the script contains `if [ -z "${{ inputs.support-path }}" ] || [ "${{ inputs.support-path }}" == ... ]` and `echo "SUPPORT_DESTDIR=${{ inputs.support-path }}"`.
 
 Locations:
 
 - `action.yaml:197`
+- `action.yaml:200`
 
 ### script-injection (severity: high)
 
-Step 'Download and install Bats-support': (a) puts expressions straight into the run script: `VERSION=${{ inputs.support-version }}` and `[[ "${{ inputs.support-clean }}" == "true" ]]`. (b) It also expands the inherited env vars ${CMD}, ${DESTDIR} (from SUPPORT_DESTDIR) and ${TEMPDIR} without quotes, e.g. `${CMD} mkdir -p ${DESTDIR}/src/` and `${CMD} install -m755 load.bash ${DESTDIR}/load.bash`.
+Rule (a) and (b), step 'Download and install Bats-support': `VERSION=${{ inputs.support-version }}` and `[[ "${{ inputs.support-clean }}" == "true" ]]` put expressions straight into the script. Workflow-controlled variables are also expanded unquoted: `DESTDIR=${SUPPORT_DESTDIR}`, `${CMD} mkdir -p ${DESTDIR}/src/`, `mkdir -p ${TEMPDIR}` and `install -m755 load.bash ${DESTDIR}/load.bash`.
 
 Locations:
 
 - `action.yaml:216`
+- `action.yaml:237`
 
 ### script-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-assert': (a) puts expressions straight into the run script: `if [ -z "${{ inputs.assert-path }}" ] ...` and `echo "ASSERT_DESTDIR=${{ inputs.assert-path }}" >> $GITHUB_ENV`.
+Rule (a), step 'Calculate DESTDIR for Bats-assert': the script contains `${{ inputs.assert-path }}` in the `if [ -z ... ]` test and in `echo "ASSERT_DESTDIR=${{ inputs.assert-path }}"`.
 
 Locations:
 
 - `action.yaml:246`
+- `action.yaml:249`
 
 ### script-injection (severity: high)
 
-Step 'Download and install Bats-assert': (a) puts expressions straight into the run script: `VERSION=${{ inputs.assert-version }}` and `[[ "${{ inputs.assert-clean }}" == "true" ]]`. (b) It also expands ${CMD}, ${DESTDIR} (from ASSERT_DESTDIR) and ${TEMPDIR} without quotes.
+Rule (a) and (b), step 'Download and install Bats-assert': `VERSION=${{ inputs.assert-version }}` and `[[ "${{ inputs.assert-clean }}" == "true" ]]` put expressions straight into the script. ${ASSERT_DESTDIR}, ${DESTDIR}, ${TEMPDIR} and ${CMD} are also expanded unquoted.
 
 Locations:
 
 - `action.yaml:265`
+- `action.yaml:286`
 
 ### script-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-detik': (a) puts expressions straight into the run script: `if [ -z "${{ inputs.detik-path }}" ] ...` and `echo "DETIK_DESTDIR=${{ inputs.detik-path }}" >> $GITHUB_ENV`.
+Rule (a), step 'Calculate DESTDIR for Bats-detik': the script contains `${{ inputs.detik-path }}` in the `if` test and in `echo "DETIK_DESTDIR=${{ inputs.detik-path }}"`.
 
 Locations:
 
 - `action.yaml:295`
+- `action.yaml:298`
 
 ### script-injection (severity: high)
 
-Step 'Download and install Bats-detik': (a) puts expressions straight into the run script: `VERSION=${{ inputs.detik-version }}` and `[[ "${{ inputs.detik-clean }}" == "true" ]]`. (b) It also expands ${CMD}, ${DESTDIR} and ${TEMPDIR} without quotes, e.g. `${CMD} mkdir -p ${DESTDIR}/src/`.
+Rule (a) and (b), step 'Download and install Bats-detik': `VERSION=${{ inputs.detik-version }}` and `[[ "${{ inputs.detik-clean }}" == "true" ]]` put expressions straight into the script. ${DESTDIR}, ${TEMPDIR} and ${CMD} are also expanded unquoted.
 
 Locations:
 
 - `action.yaml:314`
+- `action.yaml:334`
 
 ### script-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-file': (a) puts expressions straight into the run script: `if [ -z "${{ inputs.file-path }}" ] ...` and `echo "FILE_DESTDIR=${{ inputs.file-path }}" >> $GITHUB_ENV`.
+Rule (a), step 'Calculate DESTDIR for Bats-file': the script contains `${{ inputs.file-path }}` in the `if` test and in `echo "FILE_DESTDIR=${{ inputs.file-path }}"`.
 
 Locations:
 
 - `action.yaml:343`
+- `action.yaml:346`
 
 ### script-injection (severity: high)
 
-Step 'Download and install Bats-file': (a) puts expressions straight into the run script: `VERSION=${{ inputs.file-version }}` and `[[ "${{ inputs.file-clean }}" == "true" ]]`. (b) It also expands ${CMD}, ${DESTDIR} and ${TEMPDIR} without quotes.
+Rule (a) and (b), step 'Download and install Bats-file': `VERSION=${{ inputs.file-version }}` and `[[ "${{ inputs.file-clean }}" == "true" ]]` put expressions straight into the script. ${DESTDIR}, ${TEMPDIR} and ${CMD} are also expanded unquoted.
 
 Locations:
 
 - `action.yaml:362`
+- `action.yaml:383`
 
 ### script-injection (severity: high)
 
-Step 'build BATS_LIB_PATH': (b) expands inherited env vars without quotes: `S="$(winfix ${SUPPORT_DESTDIR%/*})"` (and the same for ASSERT_DESTDIR, DETIK_DESTDIR, FILE_DESTDIR).
+Rule (b), step 'build BATS_LIB_PATH': variables inherited from the workflow environment are expanded unquoted inside command substitution, e.g. `S="$(winfix ${SUPPORT_DESTDIR%/*})"`. The same applies to ASSERT_DESTDIR, DETIK_DESTDIR and FILE_DESTDIR.
 
 Locations:
 
@@ -96,7 +104,7 @@ Locations:
 
 ### script-injection (severity: high)
 
-Step 'Print info': (a) puts expressions straight into the run script, e.g. `echo "Bats lib to use in BATS_LIB_PATH env ${{ steps.libpath.outputs.libpath }}"` and `echo "Tmp path: ${{ steps.set-paths.outputs.tmp-path }}"`, plus the ${{ steps.*.outputs.* }} installed flags.
+Rule (a), step 'Print info': the echo lines put `${{ steps.*.outputs.* }}` expressions straight into the script, e.g. `echo "Bats lib to use in BATS_LIB_PATH env ${{ steps.libpath.outputs.libpath }}"` and `echo "Tmp path: ${{ steps.set-paths.outputs.tmp-path }}"`.
 
 Locations:
 
@@ -104,7 +112,7 @@ Locations:
 
 ### github-env-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-support' writes `echo "SUPPORT_DESTDIR=${{ inputs.support-path }}" >> $GITHUB_ENV` and `echo "SUPPORT_DESTDIR=${DEFAULT_BASE_DIR}/bats-support" >> $GITHUB_ENV` (DEFAULT_BASE_DIR is inherited env). Neither value goes through printf '%s' | tr -d '\n\r' first.
+Step 'Calculate DESTDIR for Bats-support' writes `echo "SUPPORT_DESTDIR=${{ inputs.support-path }}" >> $GITHUB_ENV` and `echo "SUPPORT_DESTDIR=${DEFAULT_BASE_DIR}/bats-support" >> $GITHUB_ENV` (DEFAULT_BASE_DIR is inherited from the environment). Neither value goes through `printf '%s' | tr -d '\n\r'` first.
 
 Locations:
 
@@ -112,7 +120,7 @@ Locations:
 
 ### github-env-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-assert' writes `echo "ASSERT_DESTDIR=${{ inputs.assert-path }}" >> $GITHUB_ENV` (and a value built from DEFAULT_BASE_DIR) without stripping newlines first.
+Step 'Calculate DESTDIR for Bats-assert' writes `echo "ASSERT_DESTDIR=${{ inputs.assert-path }}" >> $GITHUB_ENV` (and the DEFAULT_BASE_DIR variant) without stripping newlines first.
 
 Locations:
 
@@ -120,7 +128,7 @@ Locations:
 
 ### github-env-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-detik' writes `echo "DETIK_DESTDIR=${{ inputs.detik-path }}" >> $GITHUB_ENV` (and a value built from DEFAULT_BASE_DIR) without stripping newlines first.
+Step 'Calculate DESTDIR for Bats-detik' writes `echo "DETIK_DESTDIR=${{ inputs.detik-path }}" >> $GITHUB_ENV` (and the DEFAULT_BASE_DIR variant) without stripping newlines first.
 
 Locations:
 
@@ -128,7 +136,7 @@ Locations:
 
 ### github-env-injection (severity: high)
 
-Step 'Calculate DESTDIR for Bats-file' writes `echo "FILE_DESTDIR=${{ inputs.file-path }}" >> $GITHUB_ENV` (and a value built from DEFAULT_BASE_DIR) without stripping newlines first.
+Step 'Calculate DESTDIR for Bats-file' writes `echo "FILE_DESTDIR=${{ inputs.file-path }}" >> $GITHUB_ENV` (and the DEFAULT_BASE_DIR variant) without stripping newlines first.
 
 Locations:
 
@@ -136,7 +144,7 @@ Locations:
 
 ### github-env-injection (severity: high)
 
-Step 'build BATS_LIB_PATH' writes `echo "libpath=$LIB_PATH" >> $GITHUB_OUTPUT`. LIB_PATH is built from the inherited env vars SUPPORT_DESTDIR, ASSERT_DESTDIR, DETIK_DESTDIR and FILE_DESTDIR, and it is not passed through printf '%s' | tr -d '\n\r' before the write.
+Step 'build BATS_LIB_PATH' writes `echo "libpath=$LIB_PATH" >> $GITHUB_OUTPUT`. LIB_PATH is built from SUPPORT_DESTDIR, ASSERT_DESTDIR, DETIK_DESTDIR and FILE_DESTDIR, which are inherited from the environment and come from inputs, and it is not sanitized with `printf '%s' | tr -d '\n\r'`.
 
 Locations:
 
@@ -409,21 +417,12 @@ Locations:
 
 **Notes:**
 
-action.yaml: moved every ${{ inputs.* }} (bats/support/assert/detik/file version, path, clean) and the steps.*.outputs used in 'Print info' out of run: scripts into env: blocks; scripts now read quoted env vars. Quoted TEMPDIR/DESTDIR/fn expansions everywhere; ${CMD} changed to ${CMD:+"$CMD"} so it still drops out when empty (Windows / HOME-based dir); quoted winfix arguments. Calculate DESTDIR steps and the libpath output now go through printf '%s' | tr -d '\n\r' before writing to GITHUB_ENV/GITHUB_OUTPUT. Quoted $GITHUB_ENV/$GITHUB_OUTPUT. Behavior is otherwise unchanged; prior harden's changes re-applied. Not run or tested.
+I fixed every finding in action.yaml. All the findings point to that file, even the ones that say action.yml.
 
-### Iteration 2
+- **Inputs out of run: scripts:** every `${{ inputs.* }}` expression in a `run:` block now goes through the step's `env:` block. That covers bats/support/assert/detik/file version, path and clean. The same goes for the `steps.*.outputs` expressions in the 'Print info' step.
+- **Quoting:** I quoted the variables that were expanded bare: VERSION, TEMPDIR, DESTDIR, `$fn`, `basename`, the arguments to `winfix`, and `$GITHUB_ENV`/`$GITHUB_OUTPUT`. CMD is either 'sudo' or empty, so it is now `${CMD:+"$CMD"}`. That drops out when empty, as the unquoted form did before.
+- **Newline stripping:** the four 'Calculate DESTDIR' steps now build the value first, strip newlines with `printf '%s' | tr -d '\n\r'`, then write it to GITHUB_ENV. The libpath output gets the same treatment before it goes to GITHUB_OUTPUT.
+- **Prior fix:** this re-applies the previous harden's changes (moving the version and path inputs into `env:`), and goes further on quoting.
 
-**Fixes applied:** script-injection
-
-**Notes:**
-
-Quoted $VERSION in the 'Download and install Bats' step of action.yaml: `[[ "$VERSION" == v* ]]`. Behavior is unchanged because the right-hand pattern v* is still unquoted, so it still works as a glob.
-
-### Iteration 3
-
-**Fixes applied:** github-env-injection
-
-**Notes:**
-
-Fixed all three findings in action.yaml. Values built from $HOME now have newlines and carriage returns stripped with printf '%s' ... | tr -d '\n\r' before they are written. This covers the ${DESTDIR}/bin line written to $GITHUB_PATH in the 'Set PATH in case of cache-hit' step and in the 'Download and install Bats' step. It also covers TEMPDIR in the 'Set paths and commands for libraries' step, which is written both to $GITHUB_ENV and to the tmp-path output. Each value is captured on its own line, so errexit still works the same way. Nothing else in the action changed. Nothing was run to test these edits.
+The action should behave the same as upstream. I haven't run it or re-run the analysis.
 
